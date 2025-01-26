@@ -32,9 +32,9 @@ const SEASON = 2024;
 /* этапы */
 const RACES  = [
     'bahrain',
-    /*
     'saudi-arabia',
     'australia',
+    /*
     'japan',
     'china',
     'miami',
@@ -59,27 +59,34 @@ const RACES  = [
     */
 ];
 
-const _dateTime2UTC = (date, time) => Date.length ? Date.parse(date + (time.length ? (' ' + time) : '')) : NaN;
-const _race2URI     = (round, grandPrixId) => [round.toString().padStart(2, '0'), grandPrixId].join('-');
+const _dateTime2UTC  = (date, time) => Date.length ? Date.parse(date + (time.length ? (' ' + time) : '')) : NaN;
+const _race2URI      = (round, grandPrixId) => [round.toString().padStart(2, '0'), grandPrixId].join('-');
+
+const _line2KeyValue = (line) => {
+    line = line.split(':');
+
+    let key   = line.shift().replace(/\-/, '').trim();
+    let value = line.map(value => value.trim()).join(':');
+
+    return [key, value];
+}
 
 const _parseSimpleYAML = (data) => {
     let tempObject = Object.create(null);
 
     data = data.split(/\r?\n/);
 
-    data.forEach(row => {
-        if (row.length > 0) {
-            row = row.split(':');
-            tempObject[row.shift()] = row.map(value => value.trim()).join(':');
+    data.forEach(line => {
+        if (line.length > 0) {
+            let [key, value] = _line2KeyValue(line);
+            tempObject[key] = value;
         }
     });
 
     return tempObject;
 }
 
-/* Трасса */
-class Circuit {
-}
+const RTABLE = document.querySelector('#races');
 
 /* Конструктор */
 class Constructor {
@@ -95,11 +102,19 @@ class Engine {
 
 /* Участник */
 class Entrant {
+    id; // entrantId
+    constructorId;
+    engineId; // engineManufacturerId
+    drivers; // набор driverId
+
+    constructor() {
+        Object.keys(this).forEach(key => this[key] = ('drivers' === key) ? [] : null);
+    }
 }
 
 /* Гран При */
 class GrandPrix {
-    id; // id Гран При
+    id;
     name;
     fullName;
 
@@ -151,7 +166,6 @@ class Race {
     }
 }
 
-const Circuits     = new Map();
 const Constructors = new Map();
 const Drivers      = new Map();
 const Engines      = new Map();
@@ -160,11 +174,10 @@ const GrandsPrix   = new Map();
 const Races        = new Map();
 
 /* Вывод календаря этапов */
-const RTABLE = document.querySelector('#races');
-const RTBODY = RTABLE.querySelector('tbody');
-const RTMPL  = document.querySelector('#races-template');
-
+/* Импорт этапов и Гран При */
 (function () {
+    const RTBODY = RTABLE.querySelector('tbody');
+    const RTMPL  = document.querySelector('#races-template');
 
     RACES.forEach((grandPrixId, i) => {
         // предварительное заполнение наборов данных
@@ -191,12 +204,6 @@ const RTMPL  = document.querySelector('#races-template');
         RTBODY.lastElementChild.setAttribute('data-id', grandPrixId);
     });
 
-    RTABLE.hidden = false;
-
-})();
-
-/* Импорт этапов и Гран При */
-(function () {
     let url  = [URL_F1DB, URI_SEASONS, SEASON, URI_SEASON_RACES];
     let URLs = [];
 
@@ -264,6 +271,12 @@ const RTMPL  = document.querySelector('#races-template');
         }
 
         Races.forEach(renderRace);
+
+        RTABLE.hidden = false;
     });
 
+})();
+
+/* */
+(function () {
 })();
