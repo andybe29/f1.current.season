@@ -330,7 +330,15 @@ const Races                 = new Map();
                 }
 
                 case 'driverId': {
-                    entrant.drivers.push(value);
+                    let [key1, value1] = _line2KeyValue(data[i + 1]); // rounds
+                    let [key2, value2] = _line2KeyValue(data[i + 2]); // testDriver?
+
+                    if ((0 == value1.length) && ('testDriver' == key2)) {
+                        // у данного участника данный пилот числится только тест-пилотом
+                    } else {
+                        entrant.drivers.push(value);
+                        Drivers.set(value, null);
+                    }
                     break;
                 }
             }
