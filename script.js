@@ -11,9 +11,9 @@ const URI_SEASONS      = 'seasons';              // сезоны
 const URI_SEASON_RACES = 'races';                // этапы
 
 /* названия yaml-файлов данных */
-const YAML_CONSTRUCTORS      = 'constructor-standings.yml';          // чемпионат конструкторов
-const YAML_DRIVERS           = 'driver-standings.yml';               // чемпионат пилотов
-const YAML_ENTRANTS          = 'entrants.yml';                       // список участников
+const YAML_CONSTRUCTOR_STANDINGS = 'constructor-standings.yml';      // чемпионат конструкторов
+const YAML_DRIVER_STANDINGS      = 'driver-standings.yml';           // чемпионат пилотов
+const YAML_ENTRANTS              = 'entrants.yml';                   // список участников
 
 const YAML_RACE              = 'race.yml';                           // информация об этапе
 
@@ -63,12 +63,16 @@ const _dateTime2UTC  = (date, time) => Date.length ? Date.parse(date + (time.len
 const _race2URI      = (round, grandPrixId) => [round.toString().padStart(2, '0'), grandPrixId].join('-');
 
 const _line2KeyValue = (line) => {
-    line = line.split(':');
+    if ('string' != typeof line || line.indexOf(':') < 0) {
+        return ['', ''];
+    } else {
+        line = line.split(':');
 
-    let key   = line.shift().replace(/\-/, '').trim();
-    let value = line.map(value => value.trim()).join(':');
+        let key   = line.shift().replace(/\-/, '').trim();
+        let value = line.map(value => value.trim()).join(':');
 
-    return [key, value];
+        return [key, value];
+    }
 }
 
 const _parseSimpleYAML = (data) => {
@@ -92,8 +96,46 @@ const RTABLE = document.querySelector('#races');
 class Constructor {
 }
 
+/* Положение в Чемпионате конструкторов */
+class ConstructorStanding {
+    position;
+    constructorId;
+    engineId;
+    points;
+
+    constructor() {
+        Object.keys(this).forEach(key => this[key] = null);
+    }
+
+    // присвоение значений
+    update(data) {
+        this.position      = parseInt(data?.position, 10) || null;
+        this.constructorId = data?.constructorId || null;
+        this.engineId      = data?.engineId || null;
+        this.points        = parseInt(data?.points, 10) || null;
+    }
+}
+
 /* Пилот */
 class Driver {
+}
+
+/* Положение в Чемпионате пилотов */
+class DriverStanding {
+    position;
+    driverId;
+    points;
+
+    constructor() {
+        Object.keys(this).forEach(key => this[key] = null);
+    }
+
+    // присвоение значений
+    update(data) {
+        this.position = parseInt(data?.position, 10) || null;
+        this.driverId = data?.driverId || null;
+        this.points   = parseInt(data?.points, 10) || null;
+    }
 }
 
 /* Двигатель */
@@ -109,6 +151,11 @@ class Entrant {
 
     constructor() {
         Object.keys(this).forEach(key => this[key] = ('drivers' === key) ? [] : null);
+    }
+
+    // присвоение значений
+    update(data) {
+        Object.keys(this).forEach(key => this[key] = (key in data) ? data[key] : null);
     }
 }
 
@@ -166,12 +213,135 @@ class Race {
     }
 }
 
-const Constructors = new Map();
-const Drivers      = new Map();
-const Engines      = new Map();
-const Entrants     = new Map();
-const GrandsPrix   = new Map();
-const Races        = new Map();
+const Constructors          = new Map();
+const ConstructorStandings  = new Map();
+const Drivers               = new Map();
+const DriverStandings       = new Map();
+const Engines               = new Map();
+const Entrants              = new Map();
+const GrandsPrix            = new Map();
+const Races                 = new Map();
+
+/* Импорт положений в чемпионате конструкторов */
+(function () {
+    const url = [URL_F1DB, URI_SEASONS, SEASON, YAML_CONSTRUCTOR_STANDINGS].join('/');
+
+    fetch(url).then(function(response) {
+        if (response.ok) {
+            return Promise.resolve(response);
+        } else {
+            console.log(response.status, response.statusText);
+            return Promise.reject(new Error(response.status));
+        }
+    }).then(response => response.text())
+    .then(data => {
+        data = data.split(/\r?\n/);
+
+        for (i = 0; i < data.length; i = i + 4) {
+            let tempObject = new Object(null);
+
+            [key, tempObject.position]      = _line2KeyValue(data[i]);
+            [key, tempObject.constructorId] = _line2KeyValue(data[i + 1]);
+            [key, tempObject.engineId]      = _line2KeyValue(data[i + 2]);
+            [key, tempObject.points]        = _line2KeyValue(data[i + 3]);
+
+            let standing = new ConstructorStanding();
+            standing.update(tempObject);
+
+            ConstructorStandings.set(standing.constructorId, standing);
+        }
+    });
+
+})();
+
+/* Импорт положений в чемпионате пилотов */
+(function () {
+    const url = [URL_F1DB, URI_SEASONS, SEASON, YAML_DRIVER_STANDINGS].join('/');
+
+    fetch(url).then(function(response) {
+        if (response.ok) {
+            return Promise.resolve(response);
+        } else {
+            console.log(response.status, response.statusText);
+            return Promise.reject(new Error(response.status));
+        }
+    }).then(response => response.text())
+    .then(data => {
+        data = data.split(/\r?\n/);
+
+        for (i = 0; i < data.length; i = i + 3) {
+            let tempObject = new Object(null);
+
+            [key, tempObject.position] = _line2KeyValue(data[i]);
+            [key, tempObject.driverId] = _line2KeyValue(data[i + 1]);
+            [key, tempObject.points]   = _line2KeyValue(data[i + 2]);
+
+            let standing = new DriverStanding();
+            standing.update(tempObject);
+
+            DriverStandings.set(standing.driverId, standing);
+        }
+    });
+
+})();
+
+/* Импорт участников */
+(function () {
+    const url = [URL_F1DB, URI_SEASONS, SEASON, YAML_ENTRANTS].join('/');
+
+    fetch(url).then(function(response) {
+        if (response.ok) {
+            return Promise.resolve(response);
+        } else {
+            console.log(response.status, response.statusText);
+            return Promise.reject(new Error(response.status));
+        }
+    }).then(response => response.text())
+    .then(data => {
+        data = data.split(/\r?\n/);
+
+        let entrant = new Entrant();
+
+        for (i = 0; i < data.length; i ++) {
+            let [key, value] = _line2KeyValue(data[i]);
+
+            if ('entrantId' === key && null != entrant.id) {
+                Entrants.set(entrant.id, entrant);
+
+                entrant = new Entrant();
+            }
+
+            switch (key) {
+                case 'entrantId': {
+                    entrant.id = value;
+                    break;
+                }
+
+                case 'constructorId': {
+                    entrant.constructorId = value;
+                    Constructors.set(value, null);
+                    break;
+                }
+
+                case 'engineManufacturerId': {
+                    entrant.engineId = value;
+                    Engines.set(value, null);
+                    break;
+                }
+
+                case 'driverId': {
+                    entrant.drivers.push(value);
+                    break;
+                }
+            }
+        }
+
+        Entrants.set(entrant.id, entrant);
+
+        console.log(Entrants);
+    });
+
+})();
 
 /* Вывод календаря этапов */
 /* Импорт этапов и Гран При */
@@ -220,8 +390,8 @@ const Races        = new Map();
     });
 
     Promise.all(
-        URLs.map((url) => fetch(url).then(response => response.text()))
-    ).then((data) => {
+        URLs.map(url => fetch(url).then(response => response.text()))
+    ).then(data => {
 
         data.forEach((content) => {
             if (content.length > 1) {
@@ -260,23 +430,22 @@ const Races        = new Map();
 
         function renderRace(value, grandPrixId) {
             let race = Races.get(grandPrixId);
-            let evnt = new Date(race.schedule.race - 60 * 1000 * (new Date).getTimezoneOffset());
 
-            let tr = document.querySelector('[data-id="' + grandPrixId + '"]');
-            let td = tr.querySelectorAll('td');
+            if (null != race) {
+                let evnt = new Date(race.schedule.race - 60 * 1000 * (new Date).getTimezoneOffset());
 
-            td[1].textContent = evnt.toLocaleDateString('en-US', dateOptions);
-            td[2].textContent = evnt.toLocaleTimeString('en-US', timeOptions);
-            td[3].querySelector('a').textContent = GrandsPrix.get(race.grandPrixId).name;
+                let tr = document.querySelector('[data-id="' + grandPrixId + '"]');
+                let td = tr.querySelectorAll('td');
+
+                td[1].textContent = evnt.toLocaleDateString('en-US', dateOptions);
+                td[2].textContent = evnt.toLocaleTimeString('en-US', timeOptions);
+                td[3].querySelector('a').textContent = GrandsPrix.get(race.grandPrixId).name;
+            }
         }
 
         Races.forEach(renderRace);
 
         RTABLE.hidden = false;
-    });
+    }).catch(error => console.log(error));
 
-})();
-
-/* */
-(function () {
 })();
