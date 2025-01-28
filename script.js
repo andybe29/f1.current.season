@@ -17,26 +17,26 @@ const YAML_ENTRANTS              = 'entrants.yml';                   // спис
 
 const YAML_RACE              = 'race.yml';                           // информация об этапе
 
-const YAML_QUALIFYING        = 'qualifying-results.yml'              // результаты квалификации
-const YAML_GRID              = 'starting-grid-positions.yml';        // стартовая решётка
-const YAML_RESULTS           = 'race-results.yml';                   // результаты гонки
-const YAML_FLAPS             = 'fastest-laps.yml';                   // лучшие круги
+const YAML_RACE_QUALIFYING   = 'qualifying-results.yml'              // результаты квалификации
+const YAML_RACE_GRID         = 'starting-grid-positions.yml';        // стартовая решётка
+const YAML_RACE_RESULTS      = 'race-results.yml';                   // результаты гонки
+const YAML_RACE_FLAPS        = 'fastest-laps.yml';                   // лучшие круги
 
 const YAML_SPRINT_QUALIFYING = 'sprint-qualifying-results.yml'       // результаты квалификации спринта
 const YAML_SPRINT_GRID       = 'sprint-starting-grid-positions.yml'; // стартовая решётка спринта
 const YAML_SPRINT_RESULTS    = 'sprint-race-results.yml';            // результаты  спринта
 
 /* текущий сезон */
-const SEASON = 2024;
+const CURRENT_SEASON = 2024;
 
 /* этапы */
 const RACES  = [
     'bahrain',
     'saudi-arabia',
     'australia',
-    /*
     'japan',
     'china',
+    /*
     'miami',
     'emilia-romagna',
     'monaco',
@@ -62,32 +62,17 @@ const RACES  = [
 const _dateTime2UTC  = (date, time) => Date.length ? Date.parse(date + (time.length ? (' ' + time) : '')) : NaN;
 const _race2URI      = (round, grandPrixId) => [round.toString().padStart(2, '0'), grandPrixId].join('-');
 
-const _line2KeyValue = (line) => {
-    if ('string' != typeof line || line.indexOf(':') < 0) {
-        return ['', ''];
-    } else {
+const _line2KeyValue = line => {
+    if ('string' === typeof line && line.includes(':')) {
         line = line.split(':');
 
         let key   = line.shift().replace(/\-/, '').trim();
         let value = line.map(value => value.trim()).join(':');
 
         return [key, value];
+    } else {
+        return ['', ''];
     }
-}
-
-const _parseSimpleYAML = (data) => {
-    let tempObject = Object.create(null);
-
-    data = data.split(/\r?\n/);
-
-    data.forEach(line => {
-        if (line.length > 0) {
-            let [key, value] = _line2KeyValue(line);
-            tempObject[key] = value;
-        }
-    });
-
-    return tempObject;
 }
 
 const RTABLE = document.querySelector('#races');
@@ -206,8 +191,10 @@ class Race {
         this.distance    = Number.parseFloat(data?.distance) || null;
 
         this.schedule = Object.create(null);
+
         this.schedule.qualifying = _dateTime2UTC(data?.qualifyingDate || '', data?.qualifyingTime || '');
         this.schedule.race       = _dateTime2UTC(data?.date || '', data?.time || '');
+
         this.schedule.sprintQualifying = _dateTime2UTC(data?.sprintQualifyingDate || '', data?.sprintQualifyingTime || '');
         this.schedule.sprintRace       = _dateTime2UTC(data?.sprintRaceDate || '', data?.sprintRaceTime || '');
     }
@@ -224,7 +211,7 @@ const Races                 = new Map();
 
 /* Импорт положений в чемпионате конструкторов */
 (function () {
-    const url = [URL_F1DB, URI_SEASONS, SEASON, YAML_CONSTRUCTOR_STANDINGS].join('/');
+    const url = [URL_F1DB, URI_SEASONS, CURRENT_SEASON, YAML_CONSTRUCTOR_STANDINGS].join('/');
 
     fetch(url).then(function(response) {
         if (response.ok) {
@@ -256,7 +243,7 @@ const Races                 = new Map();
 
 /* Импорт положений в чемпионате пилотов */
 (function () {
-    const url = [URL_F1DB, URI_SEASONS, SEASON, YAML_DRIVER_STANDINGS].join('/');
+    const url = [URL_F1DB, URI_SEASONS, CURRENT_SEASON, YAML_DRIVER_STANDINGS].join('/');
 
     fetch(url).then(function(response) {
         if (response.ok) {
@@ -287,7 +274,7 @@ const Races                 = new Map();
 
 /* Импорт участников */
 (function () {
-    const url = [URL_F1DB, URI_SEASONS, SEASON, YAML_ENTRANTS].join('/');
+    const url = [URL_F1DB, URI_SEASONS, CURRENT_SEASON, YAML_ENTRANTS].join('/');
 
     fetch(url).then(function(response) {
         if (response.ok) {
@@ -372,9 +359,9 @@ const Races                 = new Map();
         let a  = td[3].querySelector('a');
         a.href        = _race2URI(round, grandPrixId);
         a.textContent = grandPrixId;
-        a.addEventListener('click', (e) => {
+        a.addEventListener('click', e => {
             event.preventDefault();
-            let grandPrixId = e.target.parentNode.parentNode.dataset.id;
+            let grandPrixId = e.target.closest('tr').dataset.id;
             console.log(grandPrixId);
         });
 
@@ -382,7 +369,7 @@ const Races                 = new Map();
         RTBODY.lastElementChild.setAttribute('data-id', grandPrixId);
     });
 
-    let url  = [URL_F1DB, URI_SEASONS, SEASON, URI_SEASON_RACES];
+    let url  = [URL_F1DB, URI_SEASONS, CURRENT_SEASON, URI_SEASON_RACES];
     let URLs = [];
 
     RACES.forEach((grandPrixId, i) => {
@@ -401,14 +388,21 @@ const Races                 = new Map();
         URLs.map(url => fetch(url).then(response => response.text()))
     ).then(data => {
 
-        data.forEach((content) => {
+        data.forEach(content => {
             if (content.length > 1) {
-                let parsedData = _parseSimpleYAML(content);
+                let tempObject = Object.create(null);
 
-                if ('grandPrixId' in parsedData) {
+                content = content.split(/\r?\n/);
+
+                content.forEach(line => {
+                    let [key, value] = _line2KeyValue(line);
+                    tempObject[key] = value;
+                });
+
+                if ('grandPrixId' in tempObject) {
                     // этап
                     let race = new Race();
-                    race.update(parsedData);
+                    race.update(tempObject);
 
                     if (race.grandPrixId) {
                         Races.set(race.grandPrixId, race);
@@ -416,7 +410,7 @@ const Races                 = new Map();
                 } else {
                     // Гран При
                     let grandPrix = new GrandPrix();
-                    grandPrix.update(parsedData);
+                    grandPrix.update(tempObject);
 
                     if (grandPrix.id) {
                         GrandsPrix.set(grandPrix.id, grandPrix);
