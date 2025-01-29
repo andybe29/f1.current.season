@@ -32,11 +32,11 @@ const CURRENT_SEASON = 2024;
 /* этапы */
 const RACES  = [
     'bahrain',
+    /*
     'saudi-arabia',
     'australia',
     'japan',
     'china',
-    /*
     'miami',
     'emilia-romagna',
     'monaco',
@@ -76,6 +76,7 @@ const _line2KeyValue = line => {
 }
 
 const RTABLE = document.querySelector('#races');
+const ETABLE = document.querySelector('#entrants');
 
 /* Конструктор */
 class Constructor {
@@ -129,7 +130,6 @@ class Engine {
 
 /* Участник */
 class Entrant {
-    id; // entrantId
     constructorId;
     engineId; // engineManufacturerId
     drivers; // набор driverId
@@ -272,7 +272,8 @@ const Races                 = new Map();
 
 })();
 
-/* Импорт участников */
+/* Импорт участников (Entries) */
+/* Вывод Entries */
 (function () {
     const url = [URL_F1DB, URI_SEASONS, CURRENT_SEASON, YAML_ENTRANTS].join('/');
 
@@ -287,25 +288,25 @@ const Races                 = new Map();
     .then(data => {
         data = data.split(/\r?\n/);
 
+        // временный массив для хранения участников
+        let tempEntrants = [];
+
         let entrant = new Entrant();
 
         for (i = 0; i < data.length; i ++) {
             let [key, value] = _line2KeyValue(data[i]);
 
-            if ('entrantId' === key && null != entrant.id) {
-                Entrants.set(entrant.id, entrant);
-
-                entrant = new Entrant();
-            }
-
             switch (key) {
-                case 'entrantId': {
-                    entrant.id = value;
-                    break;
-                }
-
                 case 'constructorId': {
+                    if (null !== entrant.constructorId) {
+                        // участник из предыдущего цикла
+                        tempEntrants.push(entrant);
+                    }
+
+                    // новый участник
+                    entrant = new Entrant();
                     entrant.constructorId = value;
+
                     Constructors.set(value, null);
                     break;
                 }
@@ -331,15 +332,64 @@ const Races                 = new Map();
             }
         }
 
-        Entrants.set(entrant.id, entrant);
+        // сортировка по constructorId
+        tempEntrants.push(entrant);
+        tempEntrants = tempEntrants.sort((a, b) => a.constructorId - b.constructorId);
+
+        tempEntrants.forEach(entrant => Entrants.set(entrant.constructorId, entrant));
 
         console.log(Entrants);
+
+        // предварительный вывод Entries
+        const ETBODY  = ETABLE.querySelector('tbody');
+        const ECTMPL  = document.querySelector('#entrants-constructor-template');
+        const ECETMPL = document.querySelector('#entrants-constructor-engine-template');
+        const EDTMPL  = document.querySelector('#entrants-driver-template');
+
+        function renderEntrant(entrant) {
+
+            if (null != entrant) {
+                let tr, td;
+
+                // constructor & engine
+                if (entrant.constructorId == entrant.engineId) {
+                    tr = document.importNode(ECTMPL.content, true);
+                    td = tr.querySelectorAll('td');
+                } else {
+                    tr = document.importNode(ECETMPL.content, true);
+                    td = tr.querySelectorAll('td');
+
+                    td[1].textContent = entrant.engineId;
+                    td[1].setAttribute('data-engine', entrant.engineId);
+                }
+
+                td[0].textContent = entrant.constructorId;
+                td[0].setAttribute('data-constructor', entrant.constructorId);
+
+                ETBODY.appendChild(tr);
+
+                entrant.drivers.forEach((driver, i) => {
+                    tr = document.importNode(EDTMPL.content, true);
+                    td = tr.querySelectorAll('td');
+
+                    td[1].textContent = driver;
+                    td[1].setAttribute('data-driver', driver);
+
+                    ETBODY.appendChild(tr);
+                });
+            }
+
+        }
+
+        Entrants.forEach(renderEntrant);
+
+        ETABLE.hidden = false;
     });
 
 })();
 
-/* Вывод календаря этапов */
-/* Импорт этапов и Гран При */
+/* Вывод Calendar */
+/* Импорт этапов (Races) и Гран При (GrandsPrix)*/
 (function () {
     const RTBODY = RTABLE.querySelector('tbody');
     const RTMPL  = document.querySelector('#races-template');
@@ -349,6 +399,7 @@ const Races                 = new Map();
         Races.set(grandPrixId, null);
         GrandsPrix.set(grandPrixId, null);
 
+        // предварительный вывод Calendar
         let round = i + 1;
 
         let tr = document.importNode(RTMPL.content, true);
@@ -430,13 +481,13 @@ const Races                 = new Map();
             hour12: false,
         };
 
-        function renderRace(value, grandPrixId) {
-            let race = Races.get(grandPrixId);
+        /* Заполнение Calendar */
+        function renderRace(race) {
 
             if (null != race) {
                 let evnt = new Date(race.schedule.race - 60 * 1000 * (new Date).getTimezoneOffset());
 
-                let tr = document.querySelector('[data-id="' + grandPrixId + '"]');
+                let tr = document.querySelector('[data-id="' + race.grandPrixId + '"]');
                 let td = tr.querySelectorAll('td');
 
                 td[1].textContent = evnt.toLocaleDateString('en-US', dateOptions);

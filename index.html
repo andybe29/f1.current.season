@@ -12,19 +12,42 @@
     <link rel="apple-touch-icon" href="icon128.png"/>
     <template id="races-template">
         <tr>
-            <td class="col-auto text-bold text-right"></td>
-            <td class="col-auto text-clip col-auto"></td>
-            <td class="col-auto text-clip col-auto"></td>
-            <td class="text-clip"><a class="text-bold"></a></td>
+            <td class="text-bold text-right"></td>
+            <td style="white-space: nowrap"></td>
+            <td style="white-space: nowrap"></td>
+            <td style="white-space: nowrap"><a class="text-bold"></a></td>
+        </tr>
+    </template>
+    <template id="entrants-constructor-template">
+        <tr>
+            <td class="text-bold text-center" style="white-space: nowrap" colspan="2"></td>
+        </tr>
+    </template>
+    <template id="entrants-constructor-engine-template">
+        <tr>
+            <td class="col-6 text-bold text-right" style="white-space: nowrap"></td>
+            <td class="col-6 text-bold" style="white-space: nowrap"></td>
+        </tr>
+    </template>
+    <template id="entrants-driver-template">
+        <tr>
+            <td class="col-6 text-right" style="white-space: nowrap"></td>
+            <td class="col-6" style="white-space: nowrap"></td>
         </tr>
     </template>
 </head>
 <body>
 <div class="container grid-sm">
-
+    <!-- header -->
     <div class="columns">
-        <div class="column col-sm-10 text-center">
-            <h3 class="text-bold">F1 Current Season</h3>
+        <div class="column col-sm-12 text-center">
+            <h3 class="text-bold" style="white-space: nowrap">F1 Current Season</h3>
+        </div>
+    </div>
+
+    <!-- Calendar -->
+    <div class="columns">
+        <div class="column col-sm-12">
 
             <table hidden id="races" class="table">
                 <thead>
@@ -36,6 +59,22 @@
                         <th>date</th>
                         <th>time</th>
                         <th>grand prix</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+
+        </div>
+    </div>
+
+    <!-- Entries -->
+    <div class="columns">
+        <div class="column col-sm-12">
+
+            <table hidden id="entrants" class="table">
+                <thead>
+                    <tr>
+                        <th colspan="2" class="text-center text-large">Entries</th>
                     </tr>
                 </thead>
                 <tbody></tbody>
