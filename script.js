@@ -1,6 +1,7 @@
 /* URL / URIs / YAML данных */
 // базовый URL
 const URL_F1DB = 'https://raw.githubusercontent.com/f1db/f1db/refs/heads/main/src/data';
+
 // URI каталогов с yaml данных
 const URI_CIRCUITS     = 'circuits';             // трассы
 const URI_CONSTRUCTORS = 'constructors';         // конструкторы
@@ -162,7 +163,6 @@ class GrandPrix {
 
 /* Этап */
 class Race {
-    id;          // id гонки в f1db
     round;       // этап чемпионата
     schedule;    // расписание этапа
     grandPrixId; // id Гран При
@@ -175,15 +175,17 @@ class Race {
     }
 
     circuit() {
+        let circuit = this.circuitId ? Circuits.get(this.circuitId) : null;
+        return circuit || null;
     }
 
     grandPrix() {
-        return this.grandPrixId ? GrandsPrix.get(this.grandPrixId) : null;
+        let grandPrix = this.grandPrixId ? GrandsPrix.get(this.grandPrixId) : null;
+        return grandPrix || null;
     }
 
     // присвоение значений
     update(data) {
-        this.id          = Number.parseInt(data?.id, 10) || null;
         this.round       = Number.parseInt(data?.round, 10) || null;
         this.grandPrixId = data?.grandPrixId || null;
         this.circuitId   = data?.circuitId || null;
@@ -486,7 +488,7 @@ const Races                 = new Map();
 
             td[1].textContent = evnt.toLocaleDateString('en-US', dateOptions);
             td[2].textContent = evnt.toLocaleTimeString('en-US', timeOptions);
-            td[3].querySelector('a').textContent = GrandsPrix.get(race.grandPrixId).name;
+            td[3].querySelector('a').textContent = race.grandPrix()?.name || race.grandPrixId;
         });
 
         RTABLE.hidden = false;
