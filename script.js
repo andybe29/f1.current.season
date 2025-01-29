@@ -272,8 +272,8 @@ const Races                 = new Map();
 
 })();
 
-/* Импорт участников (Entries) */
-/* Вывод Entries */
+/* Импорт участников (Entrants) */
+/* Вывод Entrants */
 (function () {
     const url = [URL_F1DB, URI_SEASONS, CURRENT_SEASON, YAML_ENTRANTS].join('/');
 
@@ -338,50 +338,44 @@ const Races                 = new Map();
 
         tempEntrants.forEach(entrant => Entrants.set(entrant.constructorId, entrant));
 
-        console.log(Entrants);
-
-        // предварительный вывод Entries
+        // предварительный вывод Entrants
         const ETBODY  = ETABLE.querySelector('tbody');
         const ECTMPL  = document.querySelector('#entrants-constructor-template');
         const ECETMPL = document.querySelector('#entrants-constructor-engine-template');
         const EDTMPL  = document.querySelector('#entrants-driver-template');
 
-        function renderEntrant(entrant) {
+        Entrants.forEach(entrant => {
+            if (null == entrant) return;
 
-            if (null != entrant) {
-                let tr, td;
+            let tr, td;
 
-                // constructor & engine
-                if (entrant.constructorId == entrant.engineId) {
-                    tr = document.importNode(ECTMPL.content, true);
-                    td = tr.querySelectorAll('td');
-                } else {
-                    tr = document.importNode(ECETMPL.content, true);
-                    td = tr.querySelectorAll('td');
+            // constructor & engine
+            if (entrant.constructorId == entrant.engineId) {
+                tr = document.importNode(ECTMPL.content, true);
+                td = tr.querySelectorAll('td');
+            } else {
+                tr = document.importNode(ECETMPL.content, true);
+                td = tr.querySelectorAll('td');
 
-                    td[1].textContent = entrant.engineId;
-                    td[1].setAttribute('data-engine', entrant.engineId);
-                }
-
-                td[0].textContent = entrant.constructorId;
-                td[0].setAttribute('data-constructor', entrant.constructorId);
-
-                ETBODY.appendChild(tr);
-
-                entrant.drivers.forEach((driver, i) => {
-                    tr = document.importNode(EDTMPL.content, true);
-                    td = tr.querySelectorAll('td');
-
-                    td[1].textContent = driver;
-                    td[1].setAttribute('data-driver', driver);
-
-                    ETBODY.appendChild(tr);
-                });
+                td[1].textContent = entrant.engineId;
+                td[1].setAttribute('data-engine', entrant.engineId);
             }
 
-        }
+            td[0].textContent = entrant.constructorId;
+            td[0].setAttribute('data-constructor', entrant.constructorId);
 
-        Entrants.forEach(renderEntrant);
+            ETBODY.appendChild(tr);
+
+            entrant.drivers.forEach((driver, i) => {
+                tr = document.importNode(EDTMPL.content, true);
+                td = tr.querySelectorAll('td');
+
+                td[1].textContent = driver;
+                td[1].setAttribute('data-driver', driver);
+
+                ETBODY.appendChild(tr);
+            });
+        });
 
         ETABLE.hidden = false;
     });
@@ -482,21 +476,18 @@ const Races                 = new Map();
         };
 
         /* Заполнение Calendar */
-        function renderRace(race) {
+        Races.forEach(race => {
+            if (null == race) return;
 
-            if (null != race) {
-                let evnt = new Date(race.schedule.race - 60 * 1000 * (new Date).getTimezoneOffset());
+            let evnt = new Date(race.schedule.race - 60 * 1000 * (new Date).getTimezoneOffset());
 
-                let tr = document.querySelector('[data-id="' + race.grandPrixId + '"]');
-                let td = tr.querySelectorAll('td');
+            let tr = document.querySelector('[data-id="' + race.grandPrixId + '"]');
+            let td = tr.querySelectorAll('td');
 
-                td[1].textContent = evnt.toLocaleDateString('en-US', dateOptions);
-                td[2].textContent = evnt.toLocaleTimeString('en-US', timeOptions);
-                td[3].querySelector('a').textContent = GrandsPrix.get(race.grandPrixId).name;
-            }
-        }
-
-        Races.forEach(renderRace);
+            td[1].textContent = evnt.toLocaleDateString('en-US', dateOptions);
+            td[2].textContent = evnt.toLocaleTimeString('en-US', timeOptions);
+            td[3].querySelector('a').textContent = GrandsPrix.get(race.grandPrixId).name;
+        });
 
         RTABLE.hidden = false;
     }).catch(error => console.log(error));
