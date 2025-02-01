@@ -76,31 +76,12 @@ const _line2KeyValue = line => {
     }
 }
 
-const RTABLE = document.querySelector('#races');
+const CTABLE = document.querySelector('#constructors');
 const ETABLE = document.querySelector('#entrants');
+const RTABLE = document.querySelector('#races');
 
 /* Конструктор */
 class Constructor {
-}
-
-/* Положение в Чемпионате конструкторов */
-class ConstructorStanding {
-    position;
-    constructorId;
-    engineId;
-    points;
-
-    constructor() {
-        Object.keys(this).forEach(key => this[key] = null);
-    }
-
-    // присвоение значений
-    update(data) {
-        this.position      = parseInt(data?.position, 10) || null;
-        this.constructorId = data?.constructorId || null;
-        this.engineId      = data?.engineId || null;
-        this.points        = parseInt(data?.points, 10) || null;
-    }
 }
 
 /* Пилот */
@@ -127,22 +108,6 @@ class DriverStanding {
 
 /* Двигатель */
 class Engine {
-}
-
-/* Участник */
-class Entrant {
-    constructorId;
-    engineId; // engineManufacturerId
-    drivers; // набор driverId
-
-    constructor() {
-        Object.keys(this).forEach(key => this[key] = ('drivers' === key) ? [] : null);
-    }
-
-    // присвоение значений
-    update(data) {
-        Object.keys(this).forEach(key => this[key] = (key in data) ? data[key] : null);
-    }
 }
 
 /* Гран При */
@@ -203,15 +168,14 @@ class Race {
 }
 
 const Constructors          = new Map();
-const ConstructorStandings  = new Map();
 const Drivers               = new Map();
-const DriverStandings       = new Map();
 const Engines               = new Map();
-const Entrants              = new Map();
 const GrandsPrix            = new Map();
 const Races                 = new Map();
 
-/* Импорт положений в чемпионате конструкторов */
+const DriverStandings       = [];
+
+/* Импорт и вывод положений в чемпионате конструкторов */
 (function () {
     const url = [URL_F1DB, URI_SEASONS, CURRENT_SEASON, YAML_CONSTRUCTOR_STANDINGS].join('/');
 
@@ -226,7 +190,30 @@ const Races                 = new Map();
     .then(data => {
         data = data.split(/\r?\n/);
 
-        for (i = 0; i < data.length; i = i + 4) {
+        // положение в Чемпионате конструкторов
+        class ConstructorStanding {
+            position;
+            constructorId;
+            engineId;
+            points;
+
+            constructor() {
+                Object.keys(this).forEach(key => this[key] = null);
+            }
+
+            // присвоение значений
+            update(data) {
+                this.position      = parseInt(data?.position, 10) || null;
+                this.constructorId = data?.constructorId || null;
+                this.engineId      = data?.engineId || null;
+                this.points        = parseInt(data?.points, 10) || null;
+            }
+        }
+
+        let Standings = [];
+        let length    = data.length - 1;
+
+        for (i = 0; i < length; i += 4) {
             let tempObject = new Object(null);
 
             [key, tempObject.position]      = _line2KeyValue(data[i]);
@@ -237,13 +224,49 @@ const Races                 = new Map();
             let standing = new ConstructorStanding();
             standing.update(tempObject);
 
-            ConstructorStandings.set(standing.constructorId, standing);
+            Standings.push(standing);
         }
+
+        // сортировка по position
+        Standings = Standings.sort((a, b) => a.position - b.position);
+
+        // предварительный вывод положений в чемпионате конструкторов
+        const CTBODY = CTABLE.querySelector('tbody');
+        const STMPL  = document.querySelector('#standings-template');
+
+        Standings.forEach(standing => {
+            if (null == standing) return;
+
+            let tr = document.importNode(STMPL.content, true);
+            let td = tr.querySelectorAll('td');
+
+            td[0].textContent = standing.position;
+
+            let innerHTML = [];
+
+            innerHTML.push('<span data-constructor="' + standing.constructorId + '">');
+            innerHTML.push(standing.constructorId);
+            innerHTML.push('</span>');
+
+            if (standing.constructorId != standing.engineId) {
+                innerHTML.push(' ');
+                innerHTML.push('<span data-engine="' + standing.engineId + '">');
+                innerHTML.push(standing.engineId);
+                innerHTML.push('</span>');
+            }
+
+            td[1].innerHTML   = innerHTML.join('');
+            td[2].textContent = standing.points;
+
+            CTBODY.appendChild(tr);
+        });
+
+        CTABLE.hidden = false;
     });
 
 })();
 
-/* Импорт положений в чемпионате пилотов */
+/* Импорт положений в чемпионате пилотов (DriverStandings) */
 (function () {
     const url = [URL_F1DB, URI_SEASONS, CURRENT_SEASON, YAML_DRIVER_STANDINGS].join('/');
 
@@ -256,6 +279,8 @@ const Races                 = new Map();
         }
     }).then(response => response.text())
     .then(data => {
+        let Standings = [];
+
         data = data.split(/\r?\n/);
 
         for (i = 0; i < data.length; i = i + 3) {
@@ -268,14 +293,13 @@ const Races                 = new Map();
             let standing = new DriverStanding();
             standing.update(tempObject);
 
-            DriverStandings.set(standing.driverId, standing);
+            Standings.push(standing);
         }
     });
 
 })();
 
-/* Импорт участников (Entrants) */
-/* Вывод Entrants */
+/* Импорт и вывод участников */
 (function () {
     const url = [URL_F1DB, URI_SEASONS, CURRENT_SEASON, YAML_ENTRANTS].join('/');
 
@@ -290,9 +314,23 @@ const Races                 = new Map();
     .then(data => {
         data = data.split(/\r?\n/);
 
-        // временный массив для хранения участников
-        let tempEntrants = [];
+        // участник
+        class Entrant {
+            constructorId;
+            engineId; // engineManufacturerId
+            drivers; // набор driverId
 
+            constructor() {
+                Object.keys(this).forEach(key => this[key] = ('drivers' === key) ? [] : null);
+            }
+
+            // присвоение значений
+            update(data) {
+                Object.keys(this).forEach(key => this[key] = (key in data) ? data[key] : null);
+            }
+        }
+
+        let Entrants = [];
         let entrant = new Entrant();
 
         for (i = 0; i < data.length; i ++) {
@@ -302,7 +340,7 @@ const Races                 = new Map();
                 case 'constructorId': {
                     if (null !== entrant.constructorId) {
                         // участник из предыдущего цикла
-                        tempEntrants.push(entrant);
+                        Entrants.push(entrant);
                     }
 
                     // новый участник
@@ -335,12 +373,10 @@ const Races                 = new Map();
         }
 
         // сортировка по constructorId
-        tempEntrants.push(entrant);
-        tempEntrants = tempEntrants.sort((a, b) => a.constructorId - b.constructorId);
+        Entrants.push(entrant);
+        Entrants = Entrants.sort((a, b) => a.constructorId - b.constructorId);
 
-        tempEntrants.forEach(entrant => Entrants.set(entrant.constructorId, entrant));
-
-        // предварительный вывод Entrants
+        // предварительный вывод участников
         const ETBODY  = ETABLE.querySelector('tbody');
         const ECTMPL  = document.querySelector('#entrants-constructor-template');
         const ECETMPL = document.querySelector('#entrants-constructor-engine-template');
@@ -368,6 +404,7 @@ const Races                 = new Map();
 
             ETBODY.appendChild(tr);
 
+            // пилоты
             entrant.drivers.forEach((driver, i) => {
                 tr = document.importNode(EDTMPL.content, true);
                 td = tr.querySelectorAll('td');

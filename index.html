@@ -10,14 +10,6 @@
     <link rel="icon" href="favicon.128.png" sizes="128x128"/>
     <link rel="icon" href="favicon.192.png" sizes="192x192"/>
     <link rel="apple-touch-icon" href="icon128.png"/>
-    <template id="races-template">
-        <tr>
-            <td class="text-bold text-right"></td>
-            <td style="white-space: nowrap"></td>
-            <td style="white-space: nowrap"></td>
-            <td style="white-space: nowrap"><a class="text-bold"></a></td>
-        </tr>
-    </template>
     <template id="entrants-constructor-template">
         <tr>
             <td class="text-bold text-center" style="white-space: nowrap" colspan="2"></td>
@@ -35,6 +27,21 @@
             <td class="col-6" style="white-space: nowrap"></td>
         </tr>
     </template>
+    <template id="races-template">
+        <tr>
+            <td class="text-bold text-right"></td>
+            <td class="text-right" style="white-space: nowrap"></td>
+            <td style="white-space: nowrap"></td>
+            <td style="white-space: nowrap"><a class="text-bold"></a></td>
+        </tr>
+    </template>
+    <template id="standings-template">
+        <tr>
+            <td class="text-bold text-right"></td>
+            <td style="white-space: nowrap"></td>
+            <td class="text-bold"></td>
+        </tr>
+    </template>
 </head>
 <body>
 <div class="container grid-sm">
@@ -47,7 +54,7 @@
 
     <!-- Calendar -->
     <div class="columns">
-        <div class="column col-sm-12">
+        <div class="column col-12">
 
             <table hidden id="races" class="table">
                 <thead>
@@ -56,7 +63,7 @@
                     </tr>
                     <tr>
                         <th class="text-right">#</th>
-                        <th>date</th>
+                        <th class="text-right">date</th>
                         <th>time</th>
                         <th>grand prix</th>
                     </tr>
@@ -81,6 +88,28 @@
             </table>
 
         </div>
+    </div>
+
+    <!-- ConstructorStandings -->
+    <div class="columns">
+        <div class="column col-sm-12">
+
+            <table hidden id="constructors" class="table">
+                <thead>
+                    <tr>
+                        <th colspan="3" class="text-center text-large">World Constructors' Championship</th>
+                    </tr>
+                    <tr>
+                        <th class="text-right">#</th>
+                        <th>constructor</th>
+                        <th>points</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+
+        </div>
+
     </div>
 
 </div>
