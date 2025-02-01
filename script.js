@@ -398,8 +398,32 @@ const Races        = new Map();
                 }
 
                 case 'engineManufacturerId': {
-                    entrant.engineId = value;
-                    Engines.set(value, null);
+                    let engineId = value;
+
+                    entrant.engineId = engineId;
+
+                    if (!Engines.has(engineId)) {
+                        // получение названия двигателя
+                        Engines.set(engineId, engineId);
+
+                        let currURL = [URL_F1DB, URI_ENGINES, engineId + '.yml'].join('/');
+
+                        fetch(currURL).then(function(response) {
+                            if (response.ok) {
+                                return Promise.resolve(response);
+                            } else {
+                                console.log(response.status, response.statusText);
+                                return Promise.reject(new Error(response.status));
+                            }
+                        }).then(response => response.text())
+                        .then(engine => {
+                            engine = _parseSimpleYAML(engine);
+
+                            if (engine?.id && engine?.name) {
+                                Engines.set(engine.id, engine.name);
+                            }
+                        });
+                    }
                     break;
                 }
 
@@ -425,7 +449,7 @@ const Races        = new Map();
         // предварительный вывод участников
         const ETBODY  = ETABLE.querySelector('tbody');
         const ECTMPL  = document.querySelector('#entrants-constructor-template');
-        const ECETMPL = document.querySelector('#entrants-constructor-engine-template');
+        const ECETMPL = document.querySelector('#entrants-engine-template');
         const EDTMPL  = document.querySelector('#entrants-driver-template');
 
         Entrants.forEach(entrant => {
@@ -587,11 +611,14 @@ const Races        = new Map();
 
 })();
 
-/* Заполнение названий конструкторов */
+/* Заполнение названий конструкторов, двигателей */
 (function () {
     setTimeout(() => {
         Constructors.forEach((name, id) =>
             document.querySelectorAll('[data-constructor="' + id + '"]').forEach(node => node.textContent = name)
+        )
+        Engines.forEach((name, id) =>
+            document.querySelectorAll('[data-engine="' + id + '"]').forEach(node => node.textContent = name)
         )
     }, 3000);
 })();
