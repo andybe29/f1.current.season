@@ -100,14 +100,6 @@ const DTABLE = document.querySelector('#drivers');
 const ETABLE = document.querySelector('#entrants');
 const RTABLE = document.querySelector('#races');
 
-/* Пилот */
-class Driver {
-}
-
-/* Двигатель */
-class Engine {
-}
-
 /* Этап */
 class Race {
     round;       // этап чемпионата
@@ -442,7 +434,27 @@ const Races        = new Map();
                     if (Drivers.has(driverId)) break;
 
                     // получение имени пилота
-                    Drivers.set(driverId, driverId);
+                    /* Пилот */
+                    class Driver {
+                        id;
+                        name;
+                        permanentNumber;
+
+                        constructor(driverId) {
+                            this.id = driverId;
+                            this.name = driverId;
+                            this.permanentNumber = null;
+                        }
+
+                        // присвоение значений
+                        update(data) {
+                            Object.keys(this).forEach(key => this[key] = (key in data) ? data[key] : null);
+                        }
+                    }
+
+                    let driver = new Driver(driverId);
+
+                    Drivers.set(driverId, driver);
 
                     let currURL = [URL_F1DB, URI_DRIVERS, driverId + '.yml'].join('/');
 
@@ -454,11 +466,13 @@ const Races        = new Map();
                             return Promise.reject(new Error(response.status));
                         }
                     }).then(response => response.text())
-                    .then(driver => {
-                        driver = _parseSimpleYAML(driver);
+                    .then(content => {
+                        let tempObject = _parseSimpleYAML(content);
 
-                        if (driver?.id && driver?.name) {
-                            Drivers.set(driver.id, driver.name);
+                        if (tempObject?.id && tempObject?.name) {
+                            driver.update(tempObject);
+
+                            Drivers.set(driver.id, driver);
                         }
                     });
 
@@ -502,10 +516,10 @@ const Races        = new Map();
             // пилоты
             entrant.drivers.forEach((driver, i) => {
                 tr = document.importNode(EDTMPL.content, true);
-                td = tr.querySelectorAll('td');
 
-                td[1].textContent = driver;
+                td = tr.querySelectorAll('td');
                 td[1].setAttribute('data-driver', driver);
+                td[1].textContent = driver;
 
                 ETBODY.appendChild(tr);
             });
@@ -642,8 +656,21 @@ const Races        = new Map();
         Constructors.forEach((name, id) =>
             document.querySelectorAll('[data-constructor="' + id + '"]').forEach(node => node.textContent = name)
         )
+
         Engines.forEach((name, id) =>
             document.querySelectorAll('[data-engine="' + id + '"]').forEach(node => node.textContent = name)
         )
+
+        ETABLE.querySelectorAll('[data-driver]').forEach(node => {
+            let driver = Drivers.get(node.dataset.driver);
+            let td     = node.parentNode.querySelectorAll('td');
+
+            td[0].textContent = (33 == driver.permanentNumber) ? 1 : driver.permanentNumber;
+            td[1].textContent = driver.name;
+        });
+
+        DTABLE.querySelectorAll('[data-driver]').forEach(node => {
+            node.textContent = Drivers.get(node.dataset.driver).name;
+        });
     }, 3000);
 })();
