@@ -35,7 +35,6 @@ const CURRENT_SEASON = 2024;
 /* этапы */
 const RACES  = [
     'bahrain',
-    /*
     'saudi-arabia',
     'australia',
     'japan',
@@ -59,7 +58,6 @@ const RACES  = [
     'las-vegas',
     'qatar',
     'abu-dhabi',
-    */
 ];
 
 const _dateTime2UTC  = (date, time) => Date.length ? Date.parse(date + (time.length ? (' ' + time) : '')) : NaN;
@@ -136,8 +134,14 @@ class Race {
         this.schedule.qualifying = _dateTime2UTC(data?.qualifyingDate || '', data?.qualifyingTime || '');
         this.schedule.race       = _dateTime2UTC(data?.date || '', data?.time || '');
 
-        this.schedule.sprintQualifying = _dateTime2UTC(data?.sprintQualifyingDate || '', data?.sprintQualifyingTime || '');
-        this.schedule.sprintRace       = _dateTime2UTC(data?.sprintRaceDate || '', data?.sprintRaceTime || '');
+        if (
+            'sprintQualifyingDate' in data && 'sprintQualifyingTime' in data
+            &&
+            'sprintRaceDate' in data && 'sprintRaceTime' in data
+        ) {
+            this.schedule.sprintQualifying = _dateTime2UTC(data?.sprintQualifyingDate || '', data?.sprintQualifyingTime || '');
+            this.schedule.sprintRace       = _dateTime2UTC(data?.sprintRaceDate || '', data?.sprintRaceTime || '');
+        }
     }
 }
 
@@ -622,7 +626,7 @@ const Races        = new Map();
 
         const dateOptions = {
             year:  'numeric',
-            month: 'long',
+            month: 'short',
             day:   'numeric',
         };
         const timeOptions = {
@@ -673,4 +677,33 @@ const Races        = new Map();
             node.textContent = Drivers.get(node.dataset.driver).name;
         });
     }, 3000);
+})();
+
+/* Импорт трасс (Circuits) на основе Races */
+(function () {
+    setTimeout(() => {
+        let URLs = [];
+
+        Array.from(Races.values()).map(race => race.circuitId).forEach(circuitId => {
+            Circuits.set(circuitId, null);
+            // https://github.com/f1db/f1db/issues/59
+            URLs.push([URL_F1DB, URI_CIRCUITS, (('lusail' == circuitId) ? 'losail' : circuitId) + '.yml'].join('/'));
+        });
+
+        Promise.all(
+            URLs.map(url => fetch(url).then(response => response.text()))
+        ).then(data => {
+
+            data.forEach(circuit => {
+                if (circuit.length > 1) {
+                    circuit = _parseSimpleYAML(circuit);
+                    if ('id' in circuit && 'fullName' in circuit) {
+                        Circuits.set(circuit.id, circuit.fullName);
+                    }
+                }
+            });
+
+        }).catch(error => console.log(error));
+
+    }, 1000);
 })();
