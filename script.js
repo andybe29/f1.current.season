@@ -372,28 +372,29 @@ const Races        = new Map();
                     entrant = new Entrant();
                     entrant.constructorId = constructorId;
 
-                    if (!Constructors.has(constructorId)) {
-                        // получение названия конструктора
-                        Constructors.set(constructorId, constructorId);
+                    if (Constructors.has(constructorId)) break;
 
-                        let currURL = [URL_F1DB, URI_CONSTRUCTORS, constructorId + '.yml'].join('/');
+                    // получение названия конструктора
+                    Constructors.set(constructorId, constructorId);
 
-                        fetch(currURL).then(function(response) {
-                            if (response.ok) {
-                                return Promise.resolve(response);
-                            } else {
-                                console.log(response.status, response.statusText);
-                                return Promise.reject(new Error(response.status));
-                            }
-                        }).then(response => response.text())
-                        .then(constructor => {
-                            constructor = _parseSimpleYAML(constructor);
+                    let currURL = [URL_F1DB, URI_CONSTRUCTORS, constructorId + '.yml'].join('/');
 
-                            if (constructor?.id && constructor?.name) {
-                                Constructors.set(constructor.id, constructor.name);
-                            }
-                        });
-                    }
+                    fetch(currURL).then(function(response) {
+                        if (response.ok) {
+                            return Promise.resolve(response);
+                        } else {
+                            console.log(response.status, response.statusText);
+                            return Promise.reject(new Error(response.status));
+                        }
+                    }).then(response => response.text())
+                    .then(constructor => {
+                        constructor = _parseSimpleYAML(constructor);
+
+                        if (constructor?.id && constructor?.name) {
+                            Constructors.set(constructor.id, constructor.name);
+                        }
+                    });
+
                     break;
                 }
 
@@ -402,41 +403,65 @@ const Races        = new Map();
 
                     entrant.engineId = engineId;
 
-                    if (!Engines.has(engineId)) {
-                        // получение названия двигателя
-                        Engines.set(engineId, engineId);
+                    if (Engines.has(engineId)) break;
 
-                        let currURL = [URL_F1DB, URI_ENGINES, engineId + '.yml'].join('/');
+                    // получение названия двигателя
+                    Engines.set(engineId, engineId);
 
-                        fetch(currURL).then(function(response) {
-                            if (response.ok) {
-                                return Promise.resolve(response);
-                            } else {
-                                console.log(response.status, response.statusText);
-                                return Promise.reject(new Error(response.status));
-                            }
-                        }).then(response => response.text())
-                        .then(engine => {
-                            engine = _parseSimpleYAML(engine);
+                    let currURL = [URL_F1DB, URI_ENGINES, engineId + '.yml'].join('/');
 
-                            if (engine?.id && engine?.name) {
-                                Engines.set(engine.id, engine.name);
-                            }
-                        });
-                    }
+                    fetch(currURL).then(function(response) {
+                        if (response.ok) {
+                            return Promise.resolve(response);
+                        } else {
+                            console.log(response.status, response.statusText);
+                            return Promise.reject(new Error(response.status));
+                        }
+                    }).then(response => response.text())
+                    .then(engine => {
+                        engine = _parseSimpleYAML(engine);
+
+                        if (engine?.id && engine?.name) {
+                            Engines.set(engine.id, engine.name);
+                        }
+                    });
+
                     break;
                 }
 
                 case 'driverId': {
+                    let driverId = value;
                     let [key1, value1] = _line2KeyValue(data[i + 1]); // rounds
                     let [key2, value2] = _line2KeyValue(data[i + 2]); // testDriver?
 
-                    if ((0 == value1.length) && ('testDriver' == key2)) {
-                        // у данного участника данный пилот числится только тест-пилотом
-                    } else {
-                        entrant.drivers.push(value);
-                        Drivers.set(value, null);
-                    }
+                    // у данного участника данный пилот числится только тест-пилотом
+                    if ((0 == value1.length) && ('testDriver' == key2)) break;
+
+                    entrant.drivers.push(driverId);
+
+                    if (Drivers.has(driverId)) break;
+
+                    // получение имени пилота
+                    Drivers.set(driverId, driverId);
+
+                    let currURL = [URL_F1DB, URI_DRIVERS, driverId + '.yml'].join('/');
+
+                    fetch(currURL).then(function(response) {
+                        if (response.ok) {
+                            return Promise.resolve(response);
+                        } else {
+                            console.log(response.status, response.statusText);
+                            return Promise.reject(new Error(response.status));
+                        }
+                    }).then(response => response.text())
+                    .then(driver => {
+                        driver = _parseSimpleYAML(driver);
+
+                        if (driver?.id && driver?.name) {
+                            Drivers.set(driver.id, driver.name);
+                        }
+                    });
+
                     break;
                 }
             }
