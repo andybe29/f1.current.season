@@ -686,8 +686,7 @@ const Races        = new Map();
 
         Array.from(Races.values()).map(race => race.circuitId).forEach(circuitId => {
             Circuits.set(circuitId, null);
-            // https://github.com/f1db/f1db/issues/59
-            URLs.push([URL_F1DB, URI_CIRCUITS, (('lusail' == circuitId) ? 'losail' : circuitId) + '.yml'].join('/'));
+            URLs.push([URL_F1DB, URI_CIRCUITS, circuitId + '.yml'].join('/'));
         });
 
         Promise.all(
