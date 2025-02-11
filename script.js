@@ -1,3 +1,4 @@
+'use strict'
 /* URL / URIs / YAML данных */
 // базовый URL
 const URL_F1DB = 'https://raw.githubusercontent.com/f1db/f1db/refs/heads/main/src/data';
@@ -190,8 +191,8 @@ const Races        = new Map();
         let Standings = [];
         let length    = data.length - 1;
 
-        for (i = 0; i < length; i += 4) {
-            let tempObject = new Object(null);
+        for (let i = 0; i < length; i += 4) {
+            let key, tempObject = new Object(null);
 
             [key, tempObject.position]      = _line2KeyValue(data[i]);
             [key, tempObject.constructorId] = _line2KeyValue(data[i + 1]);
@@ -279,8 +280,8 @@ const Races        = new Map();
         let Standings = [];
         let length = data.length - 1;
 
-        for (i = 0; i < length; i += 3) {
-            let tempObject = new Object(null);
+        for (let i = 0; i < length; i += 3) {
+            let key, tempObject = new Object(null);
 
             [key, tempObject.position] = _line2KeyValue(data[i]);
             [key, tempObject.driverId] = _line2KeyValue(data[i + 1]);
@@ -352,7 +353,7 @@ const Races        = new Map();
         let Entrants = [];
         let entrant = new Entrant();
 
-        for (i = 0; i < data.length; i ++) {
+        for (let i = 0; i < data.length; i ++) {
             let [key, value] = _line2KeyValue(data[i]);
 
             switch (key) {
