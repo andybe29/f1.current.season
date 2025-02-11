@@ -40,6 +40,7 @@ const RACES  = [
     'australia',
     'japan',
     'china',
+    /*
     'miami',
     'emilia-romagna',
     'monaco',
@@ -59,6 +60,7 @@ const RACES  = [
     'las-vegas',
     'qatar',
     'abu-dhabi',
+    */
 ];
 
 const _dateTime2UTC  = (date, time) => Date.length ? Date.parse(date + (time.length ? (' ' + time) : '')) : NaN;
@@ -94,10 +96,17 @@ const _parseSimpleYAML = data => {
     return tempObject;
 }
 
-const CTABLE = document.querySelector('#constructors');
-const DTABLE = document.querySelector('#drivers');
-const ETABLE = document.querySelector('#entrants');
-const RTABLE = document.querySelector('#races');
+let currentRace = null;
+
+const constructorsTable = document.querySelector('#constructors');
+const driversTable      = document.querySelector('#drivers');
+const entrantsTable     = document.querySelector('#entrants');
+const racesTable        = document.querySelector('#races');
+
+const raceTable         = document.querySelector('#race');
+
+const mainTables        = [constructorsTable, driversTable, entrantsTable, racesTable];
+const raceTables        = [raceTable];
 
 /* Этап */
 class Race {
@@ -209,7 +218,7 @@ const Races        = new Map();
         Standings = Standings.sort((a, b) => a.position - b.position);
 
         // предварительный вывод положений в чемпионате конструкторов
-        const CTBODY = CTABLE.querySelector('tbody');
+        const CTBODY = constructorsTable.querySelector('tbody');
         const STMPL  = document.querySelector('#standings-template');
 
         Standings.forEach(standing => {
@@ -239,7 +248,7 @@ const Races        = new Map();
             CTBODY.appendChild(tr);
         });
 
-        CTABLE.hidden = false;
+        constructorsTable.hidden = (null != currentRace);
     });
 
 })();
@@ -297,7 +306,7 @@ const Races        = new Map();
         Standings = Standings.sort((a, b) => a.position - b.position);
 
         // предварительный вывод положений в чемпионате конструкторов
-        const DTBODY = DTABLE.querySelector('tbody');
+        const DTBODY = driversTable.querySelector('tbody');
         const STMPL  = document.querySelector('#standings-template');
 
         Standings.forEach(standing => {
@@ -314,7 +323,7 @@ const Races        = new Map();
             DTBODY.appendChild(tr);
         });
 
-        DTABLE.hidden = false;
+        driversTable.hidden = (null != currentRace);
     });
 
 })();
@@ -491,7 +500,7 @@ const Races        = new Map();
         Entrants = Entrants.sort((a, b) => a.constructorId - b.constructorId);
 
         // предварительный вывод участников
-        const ETBODY  = ETABLE.querySelector('tbody');
+        const ETBODY  = entrantsTable.querySelector('tbody');
         const ECTMPL  = document.querySelector('#entrants-constructor-template');
         const ECETMPL = document.querySelector('#entrants-engine-template');
         const EDTMPL  = document.querySelector('#entrants-driver-template');
@@ -530,7 +539,7 @@ const Races        = new Map();
             });
         });
 
-        ETABLE.hidden = false;
+        entrantsTable.hidden = (null != currentRace);
     });
 
 })();
@@ -538,7 +547,7 @@ const Races        = new Map();
 /* Вывод Calendar */
 /* Импорт этапов (Races) и Гран При (GrandsPrix)*/
 (function () {
-    const RTBODY = RTABLE.querySelector('tbody');
+    const RTBODY = racesTable.querySelector('tbody');
     const RTMPL  = document.querySelector('#races-template');
 
     RACES.forEach((grandPrixId, i) => {
@@ -559,8 +568,11 @@ const Races        = new Map();
         a.textContent = grandPrixId;
         a.addEventListener('click', e => {
             event.preventDefault();
-            let grandPrixId = e.target.closest('tr').dataset.id;
-            console.log(grandPrixId);
+
+            currentRace = e.target.closest('tr').dataset.id;
+            loadGrandPrix();
+
+            history.pushState(currentRace, '', currentRace);
         });
 
         RTBODY.appendChild(tr);
@@ -650,7 +662,7 @@ const Races        = new Map();
             td[3].querySelector('a').textContent = race.grandPrix()?.name || race.grandPrixId;
         });
 
-        RTABLE.hidden = false;
+        racesTable.hidden = (null != currentRace);
     }).catch(error => console.log(error));
 
 })();
@@ -666,7 +678,7 @@ const Races        = new Map();
             document.querySelectorAll('[data-engine="' + id + '"]').forEach(node => node.textContent = name)
         )
 
-        ETABLE.querySelectorAll('[data-driver]').forEach(node => {
+        entrantsTable.querySelectorAll('[data-driver]').forEach(node => {
             let driver = Drivers.get(node.dataset.driver);
             let td     = node.parentNode.querySelectorAll('td');
 
@@ -674,7 +686,7 @@ const Races        = new Map();
             td[1].textContent = driver.name;
         });
 
-        DTABLE.querySelectorAll('[data-driver]').forEach(node => {
+        driversTable.querySelectorAll('[data-driver]').forEach(node => {
             node.textContent = Drivers.get(node.dataset.driver).name;
         });
     }, 3000);
@@ -705,5 +717,44 @@ const Races        = new Map();
 
         }).catch(error => console.log(error));
 
-    }, 1000);
+    }, 2000);
 })();
+
+window.addEventListener('popstate', e => {
+    console.log(e.state);
+    currentRace = e.state;
+    loadGrandPrix();
+});
+
+function loadGrandPrix() {
+    if (RACES.includes(currentRace)) {
+        // загрузка Гран При
+        mainTables.forEach(t => t.hidden = true);
+
+        let race = Races.get(currentRace);
+
+        raceTable.querySelector('big').textContent = race.grandPrix().fullName;
+        raceTable.querySelector('span').textContent = race.circuit();
+
+        let desc = [];
+        desc.push('round ' + race.round + ' of ' + RACES.length);
+        desc.push(race.laps + ' laps (' + race.distance + ' km)');
+        raceTable.querySelector('td').textContent = desc.join(', ');
+
+        raceTable.hidden = false;
+    } else {
+        // отображение главной страницы
+        currentRace = null;
+        raceTables.forEach(t => t.hidden = true);
+        mainTables.forEach(t => t.hidden = false);
+    }
+}
+
+currentRace = document.location.pathname.split('/').pop();
+currentRace = RACES.includes(currentRace) ? currentRace : null;
+
+if (currentRace != null) {
+    setTimeout(() => {
+        loadGrandPrix()
+    }, 2000);
+}
