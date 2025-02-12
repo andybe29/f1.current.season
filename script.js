@@ -98,6 +98,8 @@ const _parseSimpleYAML = data => {
 
 let currentRace = null;
 
+const loadingCircle     = document.querySelector('.loading');
+
 const constructorsTable = document.querySelector('#constructors');
 const driversTable      = document.querySelector('#drivers');
 const entrantsTable     = document.querySelector('#entrants');
@@ -705,7 +707,6 @@ const Races        = new Map();
         Promise.all(
             URLs.map(url => fetch(url).then(response => response.text()))
         ).then(data => {
-
             data.forEach(circuit => {
                 if (circuit.length > 1) {
                     circuit = _parseSimpleYAML(circuit);
@@ -715,20 +716,40 @@ const Races        = new Map();
                 }
             });
 
+            if (currentRace != null && Races.has(currentRace)) {
+                let race = Races.get(currentRace);
+                raceTable.querySelector('span').textContent = race.circuit();
+            }
+
+            loadingCircle.hidden = true;
         }).catch(error => console.log(error));
 
     }, 2000);
 })();
 
+/* back to main page */
+(function () {
+    let a = raceTable.querySelector('a');
+    a.addEventListener('click', e => {
+        event.preventDefault();
+
+        currentRace = null;
+        history.pushState(currentRace, '', document.location.pathname.split('/').slice(0, -1).join('/') + '/');
+
+        loadGrandPrix();
+    });
+})();
+
 window.addEventListener('popstate', e => {
-    console.log(e.state);
     currentRace = e.state;
     loadGrandPrix();
 });
 
-function loadGrandPrix() {
+const loadGrandPrix = () => {
     if (RACES.includes(currentRace)) {
         // загрузка Гран При
+        loadingCircle.hidden = false;
+
         mainTables.forEach(t => t.hidden = true);
 
         let race = Races.get(currentRace);
@@ -742,6 +763,7 @@ function loadGrandPrix() {
         raceTable.querySelector('td').textContent = desc.join(', ');
 
         raceTable.hidden = false;
+        loadingCircle.hidden = true;
     } else {
         // отображение главной страницы
         currentRace = null;
@@ -754,7 +776,5 @@ currentRace = document.location.pathname.split('/').pop();
 currentRace = RACES.includes(currentRace) ? currentRace : null;
 
 if (currentRace != null) {
-    setTimeout(() => {
-        loadGrandPrix()
-    }, 2000);
+    setTimeout(() => { loadGrandPrix() }, 2000);
 }
