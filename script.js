@@ -98,17 +98,27 @@ const _parseSimpleYAML = data => {
 
 let currentRace = null;
 
-const loadingCircle     = document.querySelector('.loading');
+const loadingCircle      = document.querySelector('.loading');
 
-const constructorsTable = document.querySelector('#constructors');
-const driversTable      = document.querySelector('#drivers');
-const entrantsTable     = document.querySelector('#entrants');
-const racesTable        = document.querySelector('#races');
+const constructorsTable  = document.querySelector('#constructors');
+const driversTable       = document.querySelector('#drivers');
+const entrantsTable      = document.querySelector('#entrants');
+const racesTable         = document.querySelector('#races');
 
-const raceTable         = document.querySelector('#race');
+const raceTable          = document.querySelector('#race');
+const raceQualifyTable   = document.querySelector('#race-qualifying');
+const raceGridTable      = document.querySelector('#race-grid');
+const raceResultsTable   = document.querySelector('#race-results');
+const sprintQualifyTable = document.querySelector('#sprint-qualifying');
+const sprintGridTable    = document.querySelector('#sprint-grid');
+const sprintResultsTable = document.querySelector('#sprint-results');
 
-const mainTables        = [constructorsTable, driversTable, entrantsTable, racesTable];
-const raceTables        = [raceTable];
+const mainTables         = [constructorsTable, driversTable, entrantsTable, racesTable];
+const raceTables         = [
+                                raceTable,
+                                sprintQualifyTable, sprintGridTable, sprintResultsTable,
+                                raceQualifyTable, raceGridTable, raceResultsTable
+                           ];
 
 /* Этап */
 class Race {
@@ -250,8 +260,7 @@ const Races        = new Map();
             CTBODY.appendChild(tr);
         });
 
-        constructorsTable.hidden = (null != currentRace);
-    });
+    }).finally(() => constructorsTable.hidden = (null != currentRace));
 
 })();
 
@@ -325,8 +334,7 @@ const Races        = new Map();
             DTBODY.appendChild(tr);
         });
 
-        driversTable.hidden = (null != currentRace);
-    });
+    }).finally(() => drivers.hidden = (null != currentRace));
 
 })();
 
@@ -541,8 +549,7 @@ const Races        = new Map();
             });
         });
 
-        entrantsTable.hidden = (null != currentRace);
-    });
+    }).finally(() => entrantsTable.hidden = (null != currentRace));
 
 })();
 
@@ -586,11 +593,8 @@ const Races        = new Map();
 
     RACES.forEach((grandPrixId, i) => {
         // календарь этапов
-        let currURL = [...url];
-        let round = i + 1;
-
-        currURL.push(_race2URI(round, grandPrixId));
-        currURL.push(YAML_RACE);
+        let round   = i + 1;
+        let currURL = [...url, _race2URI(round, grandPrixId), YAML_RACE];
 
         URLs.push(currURL.join('/'));
         URLs.push([URL_F1DB, URI_GRANDS_PRIX, grandPrixId + '.yml'].join('/'));
@@ -639,33 +643,26 @@ const Races        = new Map();
             }
         });
 
-        const dateOptions = {
-            year:  'numeric',
-            month: 'short',
-            day:   'numeric',
-        };
-        const timeOptions = {
-            hour:   'numeric',
-            minute: 'numeric',
-            hour12: false,
-        };
+        const dateOptions = {month: 'long', day: 'numeric', year: 'numeric'};
+        const timeOptions = {hour: 'numeric', minute: 'numeric', hour12: false};
 
         /* Заполнение Calendar */
         Races.forEach(race => {
             if (null == race) return;
 
-            let evnt = new Date(race.schedule.race - 60 * 1000 * (new Date).getTimezoneOffset());
+            let dtime = new Date(race.schedule.race - 60 * 1000 * (new Date).getTimezoneOffset());
 
             let tr = document.querySelector('[data-id="' + race.grandPrixId + '"]');
             let td = tr.querySelectorAll('td');
 
-            td[1].textContent = evnt.toLocaleDateString('en-US', dateOptions);
-            td[2].textContent = evnt.toLocaleTimeString('en-US', timeOptions);
+            td[1].textContent = new Intl.DateTimeFormat('en-US', dateOptions).format(dtime);
+            td[2].textContent = new Intl.DateTimeFormat('en-US', timeOptions).format(dtime);
             td[3].querySelector('a').textContent = race.grandPrix()?.name || race.grandPrixId;
         });
 
-        racesTable.hidden = (null != currentRace);
-    }).catch(error => console.log(error));
+    })
+    .catch(error => console.log(error))
+    .finally(() => racesTable.hidden = (null != currentRace));
 
 })();
 
@@ -754,15 +751,136 @@ const loadGrandPrix = () => {
 
         let race = Races.get(currentRace);
 
-        raceTable.querySelector('big').textContent = race.grandPrix().fullName;
-        raceTable.querySelector('span').textContent = race.circuit();
+        (function () {
+            raceTable.querySelector('big').textContent = race.grandPrix().fullName;
+            raceTable.querySelector('span').textContent = race.circuit();
 
-        let desc = [];
-        desc.push('round ' + race.round + ' of ' + RACES.length);
-        desc.push(race.laps + ' laps (' + race.distance + ' km)');
-        raceTable.querySelector('td').textContent = desc.join(', ');
+            let desc = [];
+            desc.push('round ' + race.round + ' of ' + RACES.length);
+            desc.push(race.laps + ' laps (' + race.distance + ' km)');
+            raceTable.querySelector('td').textContent = desc.join(', ');
 
-        raceTable.hidden = false;
+            raceTable.hidden = false;
+        })();
+
+        const dateTimeOptions = {
+            month:  'long',
+            day:    'numeric',
+            year:   'numeric',
+            hour:   'numeric',
+            minute: 'numeric',
+            hour12: false
+        };
+
+        const raceURL = [URL_F1DB, URI_SEASONS, CURRENT_SEASON, URI_SEASON_RACES, _race2URI(race.round, race.grandPrixId)];
+
+        class Result {
+            position;
+            driverNumber;
+            driverId;
+            constructorId;
+            engineId; // engineManufacturerId
+            q1;
+            q2;
+            q3;
+            interval;
+
+            constructor() {
+                Object.keys(this).forEach(key => this[key] = null);
+            }
+
+            constructorEngine() {
+                let value = [];
+                value.push(Constructors.has(this.constructorId) ? Constructors.get(this.constructorId) : this.constructorId);
+                value.push(Engines.has(this.engineId) ? Engines.get(this.engineId) : this.engineId);
+                return value.join(' ');
+            }
+
+            // присвоение значений
+            update(data) {
+                Object.keys(this).forEach(key => this[key] = (key in data) ? data[key] : null);
+            }
+        }
+
+        // Qualifyng Results
+        (function () {
+            let dateTimeCell = raceQualifyTable.querySelectorAll('thead tr th')[1];
+
+            if (isNaN(race.schedule.qualifying)) {
+                dateTimeCell.textContent = '';
+            } else {
+                let dtime = new Date(race.schedule.qualifying - 60 * 1000 * (new Date).getTimezoneOffset());
+                dateTimeCell.textContent = new Intl.DateTimeFormat('en-US', dateTimeOptions).format(dtime);
+            }
+
+            let currURL = [...raceURL, YAML_RACE_QUALIFYING].join('/');
+
+            fetch(currURL).then(function(response) {
+                if (response.ok) {
+                    return Promise.resolve(response);
+                } else {
+                    console.log(response.status, response.statusText);
+                    return Promise.reject(new Error(response.status));
+                }
+            }).then(response => response.text())
+            .then(data => {
+                data = data.split(REGEXP_SPLIT);
+                console.log(data);
+
+                let Results = [];
+                let result  = new Result();
+
+                for (i = 0; i < data.length; i ++) {
+                    let [key, value] = _line2KeyValue(data[i]);
+
+                    switch (key) {
+                    }
+                }
+/*
+                // предварительный вывод участников
+                const ETBODY  = ETABLE.querySelector('tbody');
+                const ECTMPL  = document.querySelector('#entrants-constructor-template');
+                const ECETMPL = document.querySelector('#entrants-engine-template');
+                const EDTMPL  = document.querySelector('#entrants-driver-template');
+
+                Entrants.forEach(entrant => {
+                    if (null == entrant) return;
+
+                    let tr, td;
+
+                    // constructor & engine
+                    if (entrant.constructorId == entrant.engineId) {
+                        tr = document.importNode(ECTMPL.content, true);
+                        td = tr.querySelectorAll('td');
+                    } else {
+                        tr = document.importNode(ECETMPL.content, true);
+                        td = tr.querySelectorAll('td');
+
+                        td[1].textContent = entrant.engineId;
+                        td[1].setAttribute('data-engine', entrant.engineId);
+                    }
+
+                    td[0].textContent = entrant.constructorId;
+                    td[0].setAttribute('data-constructor', entrant.constructorId);
+
+                    ETBODY.appendChild(tr);
+
+                    // пилоты
+                    entrant.drivers.forEach((driver, i) => {
+                        tr = document.importNode(EDTMPL.content, true);
+                        td = tr.querySelectorAll('td');
+
+                        td[1].textContent = driver;
+                        td[1].setAttribute('data-driver', driver);
+
+                        ETBODY.appendChild(tr);
+                    });
+                });
+*/
+            }).finally(() => raceQualifyTable.hidden = false);
+
+        })();
+
         loadingCircle.hidden = true;
     } else {
         // отображение главной страницы
