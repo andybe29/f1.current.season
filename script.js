@@ -180,6 +180,8 @@ const Engines      = new Map();
 const GrandsPrix   = new Map();
 const Races        = new Map();
 
+/* Импорт и предварительный вывод положений в чемпионатах */
+/* Импорт и предварительный вывод участников */
 (function () {
     const URL  = [URL_F1DB, URI_SEASONS, CURRENT_SEASON];
     const URLs = [
@@ -194,7 +196,8 @@ const Races        = new Map();
 
     Promise.all(
         URLs.map(url => fetch(url).then(response => response.text()))
-    ).then(results => {
+    )
+    .then(results => {
 
         results.forEach(data => {
             let source = null; // источник данных
@@ -218,7 +221,7 @@ const Races        = new Map();
                     case 'position': {
                         value = Number.parseInt(value);
 
-                        if (value > 1) {
+                        if ('position' in tempObject && 'points' in tempObject) {
                             if (YAML_CONSTRUCTOR_STANDINGS == source) {
                                 ConstructorStandings.push(tempObject);
                             } else if (YAML_DRIVER_STANDINGS == source) {
@@ -273,10 +276,9 @@ const Races        = new Map();
                         if (Drivers.has(driverId)) break;
 
                         // получение имени пилота
-                        let tempDriver = {
-                            name: driverId,
-                            permanentNumber: null
-                        };
+                        let tempDriver = Object.create(null);
+                        tempDriver.name = driverId;
+                        tempDriver.permanentNumber = null;
 
                         Drivers.set(driverId, tempDriver);
 
@@ -287,9 +289,9 @@ const Races        = new Map();
                         .then(driver => {
                             driver = _parseSimpleYAML(driver);
 
-                            if (driver?.id && driver?.name) {
+                            if ('id' in driver && 'name' in driver) {
                                 tempDriver.name = driver.name;
-                                tempDriver.permanentNumber = driver?.permanentNumber || null;
+                                tempDriver.permanentNumber = driver?.permanentNumber ? parseInt(driver.permanentNumber) : null;
 
                                 Drivers.set(driver.id, tempDriver);
                             }
@@ -327,7 +329,7 @@ const Races        = new Map();
                     }
 
                     case 'entrantId': {
-                        if (tempObject?.constructorId && tempObject?.drivers && tempObject?.engineId) {
+                        if ('constructorId' in tempObject && 'drivers' in tempObject && 'engineId' in tempObject) {
                             Entrants.push(tempObject);
 
                             tempObject = Object.create(null);
@@ -351,7 +353,9 @@ const Races        = new Map();
             }
         })
 
-    }).finally(() => {
+    })
+    .catch(error => console.log(error))
+    .finally(() => {
         console.log(ConstructorStandings);
         console.log(DriverStandings);
         console.log(Entrants);
@@ -363,7 +367,6 @@ const Races        = new Map();
 
 })();
 
-/* Импорт и вывод положений в чемпионате конструкторов */
 /*
 (function () {
     const url = [URL_F1DB, URI_SEASONS, CURRENT_SEASON, YAML_CONSTRUCTOR_STANDINGS].join('/');
@@ -531,7 +534,6 @@ const Races        = new Map();
 })();
 */
 
-/* Импорт и вывод участников */
 (function () {
     const url = [URL_F1DB, URI_SEASONS, CURRENT_SEASON, YAML_ENTRANTS].join('/');
 
@@ -747,7 +749,7 @@ const Races        = new Map();
 })();
 
 /* Вывод Calendar */
-/* Импорт этапов (Races) и Гран При (GrandsPrix)*/
+/* Импорт этапов (Races) и Гран При (GrandsPrix) */
 (function () {
     const RTBODY = racesTable.querySelector('tbody');
     const RTMPL  = document.querySelector('#races-template');
@@ -914,7 +916,9 @@ const Races        = new Map();
                 let race = Races.get(currentRace);
                 raceTable.querySelector('span').textContent = race.circuit();
             }
-        }).catch(error => console.log(error)).finally(() => loadingCircle.hidden = true);
+        })
+        .catch(error => console.log(error))
+        .finally(() => loadingCircle.hidden = true);
 
     }, 2000);
 })();
