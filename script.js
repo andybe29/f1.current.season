@@ -28,6 +28,9 @@ const YAML_SPRINT_QUALIFYING = 'sprint-qualifying-results.yml'       // резу
 const YAML_SPRINT_GRID       = 'sprint-starting-grid-positions.yml'; // стартовая решётка спринта
 const YAML_SPRINT_RESULTS    = 'sprint-race-results.yml';            // результаты  спринта
 
+const YAMLS_RACE_RESULTS   = [YAML_RACE_QUALIFYING, YAML_RACE_GRID, YAML_RACE_RESULTS];
+const YAMLS_SPRINT_RESULTS = [YAML_SPRINT_QUALIFYING, YAML_SPRINT_GRID, YAML_SPRINT_RESULTS];
+
 const REGEXP_SPLIT = /\r?\n/;
 
 /* текущий сезон */
@@ -40,7 +43,6 @@ const RACES  = [
     'australia',
     'japan',
     'china',
-    /*
     'miami',
     'emilia-romagna',
     'monaco',
@@ -60,8 +62,10 @@ const RACES  = [
     'las-vegas',
     'qatar',
     'abu-dhabi',
-    */
 ];
+
+/* этапы со спринтами */
+const SPRINTS = [];
 
 const _dateTime2UTC  = (date, time) => Date.length ? Date.parse(date + (time.length ? (' ' + time) : '')) : NaN;
 const _race2URI      = (round, grandPrixId) => [round.toString().padStart(2, '0'), grandPrixId].join('-');
@@ -128,6 +132,7 @@ class Race {
     circuitId;   // id трассы
     laps;        // кол-во кругов
     distance;    // дистанция гонки
+    sprint;      // флаг наличия спринта
 
     constructor() {
         Object.keys(this).forEach(key => this[key] = null);
@@ -161,6 +166,7 @@ class Race {
             &&
             'sprintRaceDate' in data && 'sprintRaceTime' in data
         ) {
+            this.sprint = true;
             this.schedule.sprintQualifying = _dateTime2UTC(data?.sprintQualifyingDate || '', data?.sprintQualifyingTime || '');
             this.schedule.sprintRace       = _dateTime2UTC(data?.sprintRaceDate || '', data?.sprintRaceTime || '');
         }
@@ -644,6 +650,7 @@ const Races        = new Map();
         });
 
         const dateOptions = {month: 'long', day: 'numeric', year: 'numeric'};
+        dateOptions.month = (document.body.clientWidth < 480) ? 'short' : 'long';
         const timeOptions = {hour: 'numeric', minute: 'numeric', hour12: false};
 
         /* Заполнение Calendar */
@@ -652,12 +659,15 @@ const Races        = new Map();
 
             let dtime = new Date(race.schedule.race - 60 * 1000 * (new Date).getTimezoneOffset());
 
-            let tr = document.querySelector('[data-id="' + race.grandPrixId + '"]');
+            let tr = racesTable.querySelector('[data-id="' + race.grandPrixId + '"]');
             let td = tr.querySelectorAll('td');
 
+            td[0].innerHTML   = race.sprint ? ('<span class="badge" data-badge="s">' + race.round + '</span>') : race.round;
             td[1].textContent = new Intl.DateTimeFormat('en-US', dateOptions).format(dtime);
             td[2].textContent = new Intl.DateTimeFormat('en-US', timeOptions).format(dtime);
             td[3].querySelector('a').textContent = race.grandPrix()?.name || race.grandPrixId;
+
+            td.forEach(el => el.style.whiteSpace = 'nowrap');
         });
 
     })
