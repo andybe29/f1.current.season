@@ -180,7 +180,191 @@ const Engines      = new Map();
 const GrandsPrix   = new Map();
 const Races        = new Map();
 
+(function () {
+    const URL  = [URL_F1DB, URI_SEASONS, CURRENT_SEASON];
+    const URLs = [
+        [...URL, YAML_CONSTRUCTOR_STANDINGS].join('/'),
+        [...URL, YAML_DRIVER_STANDINGS].join('/'),
+        [...URL, YAML_ENTRANTS].join('/'),
+    ];
+
+    const ConstructorStandings = [];
+    const DriverStandings      = [];
+    const Entrants             = [];
+
+    Promise.all(
+        URLs.map(url => fetch(url).then(response => response.text()))
+    ).then(results => {
+
+        results.forEach(data => {
+            let source = null; // источник данных
+
+            if (data.includes('entrantId')) {
+                source = YAML_ENTRANTS;
+            } else if (data.includes('constructorId')) {
+                source = YAML_CONSTRUCTOR_STANDINGS;
+            } else if (data.includes('driverId')) {
+                source = YAML_DRIVER_STANDINGS;
+            }
+
+            data = data.split(REGEXP_SPLIT);
+
+            let tempObject = Object.create(null);
+
+            for (let i = 0; i < data.length; i ++) {
+                let [key, value] = _line2KeyValue(data[i]);
+
+                switch (key) {
+                    case 'position': {
+                        value = Number.parseInt(value);
+
+                        if (value > 1) {
+                            if (YAML_CONSTRUCTOR_STANDINGS == source) {
+                                ConstructorStandings.push(tempObject);
+                            } else if (YAML_DRIVER_STANDINGS == source) {
+                                DriverStandings.push(tempObject);
+                            }
+
+                            tempObject = Object.create(null);
+                        }
+
+                        tempObject.position = value;
+                        break;
+                    }
+
+                    case 'constructorId': {
+                        tempObject.constructorId = value;
+
+                        if (Constructors.has(tempObject.constructorId)) break;
+
+                        // получение названия конструктора
+                        Constructors.set(tempObject.constructorId, tempObject.constructorId);
+
+                        let currURL = [URL_F1DB, URI_CONSTRUCTORS, tempObject.constructorId + '.yml'].join('/');
+
+                        fetch(currURL)
+                        .then(response => response.text())
+                        .then(constructor => {
+                            constructor = _parseSimpleYAML(constructor);
+
+                            if (constructor?.id && constructor?.name) {
+                                Constructors.set(constructor.id, constructor.name);
+                            }
+                        });
+
+                        break;
+                    }
+
+                    case 'driverId': {
+                        let driverId = value;
+
+                        if (YAML_DRIVER_STANDINGS == source) {
+                            tempObject.driverId = driverId;
+                        } else if (YAML_ENTRANTS == source) {
+                            let [key1, value1] = _line2KeyValue(data[i + 1]); // rounds
+                            let [key2, value2] = _line2KeyValue(data[i + 2]); // testDriver?
+
+                            // у данного участника данный пилот числится только тест-пилотом
+                            if ((0 == value1.length) && ('testDriver' == key2)) break;
+
+                            tempObject.drivers.push(driverId);
+                        }
+
+                        if (Drivers.has(driverId)) break;
+
+                        // получение имени пилота
+                        let tempDriver = {
+                            name: driverId,
+                            permanentNumber: null
+                        };
+
+                        Drivers.set(driverId, tempDriver);
+
+                        let currURL = [URL_F1DB, URI_DRIVERS, driverId + '.yml'].join('/');
+
+                        fetch(currURL)
+                        .then(response => response.text())
+                        .then(driver => {
+                            driver = _parseSimpleYAML(driver);
+
+                            if (driver?.id && driver?.name) {
+                                tempDriver.name = driver.name;
+                                tempDriver.permanentNumber = driver?.permanentNumber || null;
+
+                                Drivers.set(driver.id, tempDriver);
+                            }
+                        });
+
+                        break;
+                    }
+
+                    case 'drivers': {
+                        tempObject.drivers = [];
+                        break;
+                    }
+
+                    case 'engineManufacturerId': {
+                        tempObject.engineId = value;
+
+                        if (Engines.has(tempObject.engineId)) break;
+
+                        // получение названия двигателя
+                        Engines.set(tempObject.engineId, tempObject.engineId);
+
+                        let currURL = [URL_F1DB, URI_ENGINES, tempObject.engineId + '.yml'].join('/');
+
+                        fetch(currURL)
+                        .then(response => response.text())
+                        .then(engine => {
+                            engine = _parseSimpleYAML(engine);
+
+                            if (engine?.id && engine?.name) {
+                                Engines.set(engine.id, engine.name);
+                            }
+                        });
+
+                        break;
+                    }
+
+                    case 'entrantId': {
+                        if (tempObject?.constructorId && tempObject?.drivers && tempObject?.engineId) {
+                            Entrants.push(tempObject);
+
+                            tempObject = Object.create(null);
+                        }
+                        break;
+                    }
+
+                    case 'points': {
+                        tempObject.points = parseInt(value);
+                        break;
+                    }
+                }
+            }
+
+            if (YAML_CONSTRUCTOR_STANDINGS == source) {
+                ConstructorStandings.push(tempObject);
+            } else if (YAML_DRIVER_STANDINGS == source) {
+                DriverStandings.push(tempObject);
+            } else if (YAML_ENTRANTS == source) {
+                Entrants.push(tempObject);
+            }
+        })
+
+    }).finally(() => {
+        console.log(ConstructorStandings);
+        console.log(DriverStandings);
+        console.log(Entrants);
+
+        constructorsTable.hidden = (null != currentRace);
+        driversTable.hidden      = (null != currentRace);
+        entrantsTable.hidden     = (null != currentRace);
+    });
+
+})();
+
 /* Импорт и вывод положений в чемпионате конструкторов */
+/*
 (function () {
     const url = [URL_F1DB, URI_SEASONS, CURRENT_SEASON, YAML_CONSTRUCTOR_STANDINGS].join('/');
 
@@ -269,8 +453,10 @@ const Races        = new Map();
     }).finally(() => constructorsTable.hidden = (null != currentRace));
 
 })();
+*/
 
 /* Импорт положений в чемпионате пилотов */
+/*
 (function () {
     const url = [URL_F1DB, URI_SEASONS, CURRENT_SEASON, YAML_DRIVER_STANDINGS].join('/');
 
@@ -343,6 +529,7 @@ const Races        = new Map();
     }).finally(() => drivers.hidden = (null != currentRace));
 
 })();
+*/
 
 /* Импорт и вывод участников */
 (function () {
@@ -727,9 +914,7 @@ const Races        = new Map();
                 let race = Races.get(currentRace);
                 raceTable.querySelector('span').textContent = race.circuit();
             }
-
-            loadingCircle.hidden = true;
-        }).catch(error => console.log(error));
+        }).catch(error => console.log(error)).finally(() => loadingCircle.hidden = true);
 
     }, 2000);
 })();
