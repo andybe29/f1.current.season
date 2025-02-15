@@ -455,7 +455,7 @@ const Races        = new Map(); // этапы
         // Предварительный вывод entrantsTable
         (function() {
             // сортировка по constructorId
-            Entrants = Entrants.sort((a, b) => a.constructorId - b.constructorId);
+            Entrants = Entrants.sort((a, b) => a.constructorId.localeCompare(b.constructorId));
 
             const tbody = entrantsTable.querySelector('tbody');
             const constructorTmpl = document.querySelector('#entrants-constructor-template');
@@ -505,6 +505,7 @@ const Races        = new Map(); // этапы
 
 /* Импорт Races и GrandsPrix */
 /* Заполнение racesTable */
+/* Импорт Circuits на основе Races */
 (function () {
     const URL  = [URL_F1DB, URI_SEASONS, CURRENT_SEASON, URI_SEASON_RACES];
     const URLs = [];
@@ -564,14 +565,44 @@ const Races        = new Map(); // этапы
     })
     .catch(error => console.log(error))
     .finally(() => {
+
+        // Импорт Circuits на основе Races
+        (function () {
+            let URLs = [];
+
+            Array.from(Races.values()).map(race => race.circuitId).forEach(circuitId => {
+                Circuits.set(circuitId, null);
+                URLs.push([URL_F1DB, URI_CIRCUITS, circuitId + '.yml'].join('/'));
+            });
+
+            Promise.all(
+                URLs.map(url => fetch(url).then(response => response.text()))
+            ).then(data => {
+                data.forEach(circuit => {
+                    if (circuit.length > 1) {
+                        circuit = _parseSimpleYAML(circuit);
+                        if ('id' in circuit && 'fullName' in circuit) {
+                            Circuits.set(circuit.id, circuit.fullName);
+                        }
+                    }
+                });
+
+                if (currentRace != null && Races.has(currentRace)) {
+                    let race = Races.get(currentRace);
+                    raceTable.querySelector('span').textContent = race.circuit();
+                }
+            })
+            .catch(error => console.log(error))
+            .finally(() => loadingCircle.hidden = true);
+
+        })();
+
         const dateOptions = {day: 'numeric', year: 'numeric'};
         dateOptions.month = (document.body.clientWidth < 480) ? 'short' : 'long';
         const timeOptions = {hour: 'numeric', minute: 'numeric', hour12: false};
 
         // Заполнение racesTable
         Races.forEach(race => {
-            if (null == race) return;
-
             let dtime = new Date(race.schedule.race - 60 * 1000 * (new Date).getTimezoneOffset());
 
             let tr = racesTable.querySelector('[data-id="' + race.grandPrixId + '"]');
@@ -611,41 +642,6 @@ const Races        = new Map(); // этапы
             node.textContent = Drivers.get(node.dataset.driver).name;
         });
     }, 3000);
-})();
-
-/* Импорт трасс (Circuits) на основе Races */
-(function () {
-    /*
-    setTimeout(() => {
-        let URLs = [];
-
-        Array.from(Races.values()).map(race => race.circuitId).forEach(circuitId => {
-            Circuits.set(circuitId, null);
-            URLs.push([URL_F1DB, URI_CIRCUITS, circuitId + '.yml'].join('/'));
-        });
-
-        Promise.all(
-            URLs.map(url => fetch(url).then(response => response.text()))
-        ).then(data => {
-            data.forEach(circuit => {
-                if (circuit.length > 1) {
-                    circuit = _parseSimpleYAML(circuit);
-                    if ('id' in circuit && 'fullName' in circuit) {
-                        Circuits.set(circuit.id, circuit.fullName);
-                    }
-                }
-            });
-
-            if (currentRace != null && Races.has(currentRace)) {
-                let race = Races.get(currentRace);
-                raceTable.querySelector('span').textContent = race.circuit();
-            }
-        })
-        .catch(error => console.log(error))
-        .finally(() => loadingCircle.hidden = true);
-
-    }, 5000);
-    */
 })();
 
 /* back to main page */
