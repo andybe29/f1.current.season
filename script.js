@@ -738,6 +738,7 @@ const loadGrandPrix = () => {
             time;
             gap;
             points;
+            start; // start position
 
             constructor() {
                 Object.keys(this).forEach(key => this[key] = null);
@@ -792,48 +793,10 @@ const loadGrandPrix = () => {
                     switch (key) {
                     }
                 }
-/*
-                // предварительный вывод участников
-                const ETBODY  = ETABLE.querySelector('tbody');
-                const ECTMPL  = document.querySelector('#entrants-constructor-template');
-                const ECETMPL = document.querySelector('#entrants-engine-template');
-                const EDTMPL  = document.querySelector('#entrants-driver-template');
 
-                Entrants.forEach(entrant => {
-                    if (null == entrant) return;
-
-                    let tr, td;
-
-                    // constructor & engine
-                    if (entrant.constructorId == entrant.engineId) {
-                        tr = document.importNode(ECTMPL.content, true);
-                        td = tr.querySelectorAll('td');
-                    } else {
-                        tr = document.importNode(ECETMPL.content, true);
-                        td = tr.querySelectorAll('td');
-
-                        td[1].textContent = entrant.engineId;
-                        td[1].setAttribute('data-engine', entrant.engineId);
-                    }
-
-                    td[0].textContent = entrant.constructorId;
-                    td[0].setAttribute('data-constructor', entrant.constructorId);
-
-                    ETBODY.appendChild(tr);
-
-                    // пилоты
-                    entrant.drivers.forEach((driver, i) => {
-                        tr = document.importNode(EDTMPL.content, true);
-                        td = tr.querySelectorAll('td');
-
-                        td[1].textContent = driver;
-                        td[1].setAttribute('data-driver', driver);
-
-                        ETBODY.appendChild(tr);
-                    });
-                });
-*/
-            }).finally(() => raceQualifyTable.hidden = false);
+            }).finally(() => {
+                raceQualifyTable.hidden = false
+            });
 
         })();
 
