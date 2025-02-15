@@ -503,16 +503,16 @@ const Races        = new Map(); // этапы
 
 })();
 
-/* Импорт этапов (Races) и Гран При (GrandsPrix) */
-/*
+/* Импорт Races и GrandsPrix */
+/* Заполнение racesTable */
 (function () {
-    let url  = [URL_F1DB, URI_SEASONS, CURRENT_SEASON, URI_SEASON_RACES];
-    let URLs = [];
+    const URL  = [URL_F1DB, URI_SEASONS, CURRENT_SEASON, URI_SEASON_RACES];
+    const URLs = [];
 
     RACES.forEach((grandPrixId, i) => {
         // календарь этапов
         let round   = i + 1;
-        let currURL = [...url, _race2URI(round, grandPrixId), YAML_RACE];
+        let currURL = [...URL, _race2URI(round, grandPrixId), YAML_RACE];
 
         URLs.push(currURL.join('/'));
         URLs.push([URL_F1DB, URI_GRANDS_PRIX, grandPrixId + '.yml'].join('/'));
@@ -520,7 +520,7 @@ const Races        = new Map(); // этапы
 
     Promise.all(
         URLs.map(url => fetch(url).then(response => response.text()))
-    ).then(data => {
+    ).then(results => {
         // Гран При
         class GrandPrix {
             id;
@@ -537,9 +537,9 @@ const Races        = new Map(); // этапы
             }
         }
 
-        data.forEach(content => {
-            if (content.length > 1) {
-                let tempObject = _parseSimpleYAML(content);
+        results.forEach(data => {
+            if (data.length > 1) {
+                let tempObject = _parseSimpleYAML(data);
 
                 if ('grandPrixId' in tempObject) {
                     // этап
@@ -561,11 +561,14 @@ const Races        = new Map(); // этапы
             }
         });
 
-        const dateOptions = {month: 'long', day: 'numeric', year: 'numeric'};
+    })
+    .catch(error => console.log(error))
+    .finally(() => {
+        const dateOptions = {day: 'numeric', year: 'numeric'};
         dateOptions.month = (document.body.clientWidth < 480) ? 'short' : 'long';
         const timeOptions = {hour: 'numeric', minute: 'numeric', hour12: false};
 
-        // Заполнение Calendar
+        // Заполнение racesTable
         Races.forEach(race => {
             if (null == race) return;
 
@@ -578,16 +581,12 @@ const Races        = new Map(); // этапы
             td[1].textContent = new Intl.DateTimeFormat('en-US', dateOptions).format(dtime);
             td[2].textContent = new Intl.DateTimeFormat('en-US', timeOptions).format(dtime);
             td[3].querySelector('a').textContent = race.grandPrix()?.name || race.grandPrixId;
-
-            td.forEach(el => el.style.whiteSpace = 'nowrap');
         });
 
-    })
-    .catch(error => console.log(error))
-    .finally(() => racesTable.hidden = (null != currentRace));
+        racesTable.hidden = (null != currentRace)
+    });
 
 })();
-*/
 
 /* Заполнение названий конструкторов, двигателей */
 (function () {
