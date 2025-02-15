@@ -20,16 +20,14 @@ const YAML_ENTRANTS              = 'entrants.yml';                   // спис
 const YAML_RACE              = 'race.yml';                           // информация об этапе
 
 const YAML_RACE_QUALIFYING   = 'qualifying-results.yml'              // результаты квалификации
-const YAML_RACE_GRID         = 'starting-grid-positions.yml';        // стартовая решётка
 const YAML_RACE_RESULTS      = 'race-results.yml';                   // результаты гонки
 const YAML_RACE_FLAPS        = 'fastest-laps.yml';                   // лучшие круги
 
 const YAML_SPRINT_QUALIFYING = 'sprint-qualifying-results.yml'       // результаты квалификации спринта
-const YAML_SPRINT_GRID       = 'sprint-starting-grid-positions.yml'; // стартовая решётка спринта
 const YAML_SPRINT_RESULTS    = 'sprint-race-results.yml';            // результаты  спринта
 
-const YAMLS_RACE_RESULTS   = [YAML_RACE_QUALIFYING, YAML_RACE_GRID, YAML_RACE_RESULTS];
-const YAMLS_SPRINT_RESULTS = [YAML_SPRINT_QUALIFYING, YAML_SPRINT_GRID, YAML_SPRINT_RESULTS];
+const YAMLS_RACE_RESULTS   = [YAML_RACE_QUALIFYING, YAML_RACE_RESULTS, YAML_RACE_FLAPS];
+const YAMLS_SPRINT_RESULTS = [YAML_SPRINT_QUALIFYING, YAML_SPRINT_RESULTS];
 
 const REGEXP_SPLIT = /\r?\n/;
 
@@ -736,7 +734,10 @@ const loadGrandPrix = () => {
             q1;
             q2;
             q3;
-            interval;
+            laps;
+            time;
+            gap;
+            points;
 
             constructor() {
                 Object.keys(this).forEach(key => this[key] = null);
@@ -745,7 +746,9 @@ const loadGrandPrix = () => {
             constructorEngine() {
                 let value = [];
                 value.push(Constructors.has(this.constructorId) ? Constructors.get(this.constructorId) : this.constructorId);
-                value.push(Engines.has(this.engineId) ? Engines.get(this.engineId) : this.engineId);
+                if (this.constructorId != this.engineId) {
+                    value.push(Engines.has(this.engineId) ? Engines.get(this.engineId) : this.engineId);
+                }
                 return value.join(' ');
             }
 
