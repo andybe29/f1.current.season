@@ -180,9 +180,44 @@ const Engines      = new Map();
 const GrandsPrix   = new Map();
 const Races        = new Map();
 
+/* Предварительный вывод racesTable на основе RACES */
+(function() {
+    const tbody = racesTable.querySelector('tbody');
+    const tmpl  = document.querySelector('#races-template');
+
+    RACES.forEach((grandPrixId, i) => {
+        // предварительное заполнение наборов данных
+        Races.set(grandPrixId, null);
+        GrandsPrix.set(grandPrixId, null);
+
+        // предварительный вывод Calendar
+        let round = i + 1;
+
+        let tr = document.importNode(tmpl.content, true);
+        let td = tr.querySelectorAll('td');
+
+        td[0].textContent = round;
+
+        let a  = td[3].querySelector('a');
+        a.href        = _race2URI(round, grandPrixId);
+        a.textContent = grandPrixId;
+        a.addEventListener('click', e => {
+            event.preventDefault();
+
+            currentRace = e.target.closest('tr').dataset.id;
+            loadGrandPrix();
+
+            history.pushState(currentRace, '', currentRace);
+        });
+
+        tbody.appendChild(tr);
+        tbody.lastElementChild.setAttribute('data-id', grandPrixId);
+    });
+})();
+
 /* Импорт и предварительный вывод положений в чемпионатах */
 /* Импорт и предварительный вывод участников */
-(function () {
+(function() {
     const URL  = [URL_F1DB, URI_SEASONS, CURRENT_SEASON];
     const URLs = [
         [...URL, YAML_CONSTRUCTOR_STANDINGS].join('/'),
@@ -198,7 +233,6 @@ const Races        = new Map();
         URLs.map(url => fetch(url).then(response => response.text()))
     )
     .then(results => {
-
         results.forEach(data => {
             let source = null; // источник данных
 
@@ -352,7 +386,6 @@ const Races        = new Map();
                 Entrants.push(tempObject);
             }
         })
-
     })
     .catch(error => console.log(error))
     .finally(() => {
@@ -534,7 +567,7 @@ const Races        = new Map();
 })();
 */
 
-(function () {
+(function() {
     const url = [URL_F1DB, URI_SEASONS, CURRENT_SEASON, YAML_ENTRANTS].join('/');
 
     fetch(url).then(function(response) {
@@ -748,41 +781,9 @@ const Races        = new Map();
 
 })();
 
-/* Вывод Calendar */
 /* Импорт этапов (Races) и Гран При (GrandsPrix) */
+/*
 (function () {
-    const RTBODY = racesTable.querySelector('tbody');
-    const RTMPL  = document.querySelector('#races-template');
-
-    RACES.forEach((grandPrixId, i) => {
-        // предварительное заполнение наборов данных
-        Races.set(grandPrixId, null);
-        GrandsPrix.set(grandPrixId, null);
-
-        // предварительный вывод Calendar
-        let round = i + 1;
-
-        let tr = document.importNode(RTMPL.content, true);
-        let td = tr.querySelectorAll('td');
-
-        td[0].textContent = round;
-
-        let a  = td[3].querySelector('a');
-        a.href        = _race2URI(round, grandPrixId);
-        a.textContent = grandPrixId;
-        a.addEventListener('click', e => {
-            event.preventDefault();
-
-            currentRace = e.target.closest('tr').dataset.id;
-            loadGrandPrix();
-
-            history.pushState(currentRace, '', currentRace);
-        });
-
-        RTBODY.appendChild(tr);
-        RTBODY.lastElementChild.setAttribute('data-id', grandPrixId);
-    });
-
     let url  = [URL_F1DB, URI_SEASONS, CURRENT_SEASON, URI_SEASON_RACES];
     let URLs = [];
 
@@ -842,7 +843,7 @@ const Races        = new Map();
         dateOptions.month = (document.body.clientWidth < 480) ? 'short' : 'long';
         const timeOptions = {hour: 'numeric', minute: 'numeric', hour12: false};
 
-        /* Заполнение Calendar */
+        // Заполнение Calendar
         Races.forEach(race => {
             if (null == race) return;
 
@@ -864,6 +865,7 @@ const Races        = new Map();
     .finally(() => racesTable.hidden = (null != currentRace));
 
 })();
+*/
 
 /* Заполнение названий конструкторов, двигателей */
 (function () {
@@ -892,6 +894,7 @@ const Races        = new Map();
 
 /* Импорт трасс (Circuits) на основе Races */
 (function () {
+    /*
     setTimeout(() => {
         let URLs = [];
 
@@ -920,7 +923,8 @@ const Races        = new Map();
         .catch(error => console.log(error))
         .finally(() => loadingCircle.hidden = true);
 
-    }, 2000);
+    }, 5000);
+    */
 })();
 
 /* back to main page */
