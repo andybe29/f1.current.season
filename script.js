@@ -274,22 +274,12 @@ const Races        = new Map(); // этапы
                     case 'constructorId': {
                         tempObject.constructorId = value;
 
-                        if (Constructors.has(tempObject.constructorId)) break;
-
-                        // получение названия конструктора
-                        Constructors.set(tempObject.constructorId, tempObject.constructorId);
-
-                        let currURL = [URL_F1DB, URI_CONSTRUCTORS, tempObject.constructorId + '.yml'].join('/');
-
-                        fetch(currURL)
-                        .then(response => response.text())
-                        .then(constructor => {
-                            constructor = _parseSimpleYAML(constructor);
-
-                            if (constructor?.id && constructor?.name) {
-                                Constructors.set(constructor.id, constructor.name);
-                            }
-                        });
+                        if (Constructors.has(tempObject.constructorId)) {
+                            //
+                        } else {
+                            // получение названия конструктора
+                            Constructors.set(tempObject.constructorId, tempObject.constructorId);
+                        }
 
                         break;
                     }
@@ -318,21 +308,6 @@ const Races        = new Map(); // этапы
 
                         Drivers.set(driverId, tempDriver);
 
-                        let currURL = [URL_F1DB, URI_DRIVERS, driverId + '.yml'].join('/');
-
-                        fetch(currURL)
-                        .then(response => response.text())
-                        .then(driver => {
-                            driver = _parseSimpleYAML(driver);
-
-                            if ('id' in driver && 'name' in driver) {
-                                tempDriver.name = driver.name;
-                                tempDriver.permanentNumber = driver?.permanentNumber ? parseInt(driver.permanentNumber) : null;
-
-                                Drivers.set(driver.id, tempDriver);
-                            }
-                        });
-
                         break;
                     }
 
@@ -344,22 +319,12 @@ const Races        = new Map(); // этапы
                     case 'engineManufacturerId': {
                         tempObject.engineId = value;
 
-                        if (Engines.has(tempObject.engineId)) break;
-
-                        // получение названия двигателя
-                        Engines.set(tempObject.engineId, tempObject.engineId);
-
-                        let currURL = [URL_F1DB, URI_ENGINES, tempObject.engineId + '.yml'].join('/');
-
-                        fetch(currURL)
-                        .then(response => response.text())
-                        .then(engine => {
-                            engine = _parseSimpleYAML(engine);
-
-                            if (engine?.id && engine?.name) {
-                                Engines.set(engine.id, engine.name);
-                            }
-                        });
+                        if (Engines.has(tempObject.engineId)) {
+                            //
+                        } else {
+                            // получение названия двигателя
+                            Engines.set(tempObject.engineId, tempObject.engineId);
+                        }
 
                         break;
                     }
@@ -392,65 +357,6 @@ const Races        = new Map(); // этапы
     .catch(error => console.log(error))
     .finally(() => {
         const tmpl = document.querySelector('#standings-template');
-
-        // Предварительный вывод constructorsTable
-        (function() {
-            // сортировка по position
-            ConstructorStandings = ConstructorStandings.sort((a, b) => a.position - b.position);
-
-            const tbody = constructorsTable.querySelector('tbody');
-
-            ConstructorStandings.forEach(standing => {
-                let tr = document.importNode(tmpl.content, true);
-                let td = tr.querySelectorAll('td');
-
-                td[0].textContent = standing.position;
-
-                let innerHTML = [];
-
-                innerHTML.push('<span data-constructor="' + standing.constructorId + '">');
-                innerHTML.push(standing.constructorId);
-                innerHTML.push('</span>');
-
-                if (standing.constructorId != standing.engineId) {
-                    innerHTML.push(' ');
-                    innerHTML.push('<span data-engine="' + standing.engineId + '">');
-                    innerHTML.push(standing.engineId);
-                    innerHTML.push('</span>');
-                }
-
-                td[1].innerHTML   = innerHTML.join('');
-                td[2].textContent = standing.points;
-
-                td.forEach(el => el.style.whiteSpace = 'nowrap');
-                tbody.appendChild(tr);
-            });
-
-            constructorsTable.hidden = (null != currentRace);
-        })();
-
-        // Предварительный вывод driversTable
-        (function() {
-            // сортировка по position
-            DriverStandings = DriverStandings.sort((a, b) => a.position - b.position);
-
-            const tbody = driversTable.querySelector('tbody');
-
-            DriverStandings.forEach(standing => {
-                let tr = document.importNode(tmpl.content, true);
-                let td = tr.querySelectorAll('td');
-
-                td[0].textContent = standing.position;
-                td[1].textContent = standing.driverId;
-                td[1].setAttribute('data-driver', standing.driverId);
-                td[2].textContent = standing.points;
-
-                td.forEach(el => el.style.whiteSpace = 'nowrap');
-                tbody.appendChild(tr);
-            });
-
-            driversTable.hidden = (null != currentRace);
-        })();
 
         // Предварительный вывод entrantsTable
         (function() {
@@ -497,6 +403,158 @@ const Races        = new Map(); // этапы
             });
 
             entrantsTable.hidden = (null != currentRace);
+        })();
+
+        // Предварительный вывод constructorsTable
+        (function() {
+            // сортировка по position
+            ConstructorStandings = ConstructorStandings.sort((a, b) => a.position - b.position);
+
+            const tbody = constructorsTable.querySelector('tbody');
+
+            ConstructorStandings.forEach(standing => {
+                let tr = document.importNode(tmpl.content, true);
+                let td = tr.querySelectorAll('td');
+
+                td[0].textContent = standing.position;
+
+                let innerHTML = [];
+
+                innerHTML.push('<span data-constructor="' + standing.constructorId + '">');
+                innerHTML.push(standing.constructorId);
+                innerHTML.push('</span>');
+
+                if (standing.constructorId != standing.engineId) {
+                    innerHTML.push(' ');
+                    innerHTML.push('<span data-engine="' + standing.engineId + '">');
+                    innerHTML.push(standing.engineId);
+                    innerHTML.push('</span>');
+                }
+
+                td[1].innerHTML   = innerHTML.join('');
+                td[2].textContent = standing.points;
+
+                td.forEach(el => el.style.whiteSpace = 'nowrap');
+                tbody.appendChild(tr);
+            });
+
+            // импорт Constructors, Engines
+            (function() {
+                const URLs = [];
+
+                Array.from(Constructors.keys()).forEach(constructorId => {
+                    URLs.push([URL_F1DB, URI_CONSTRUCTORS, constructorId + '.yml'].join('/'))
+                });
+
+                Array.from(Engines.keys()).forEach(engineId => {
+                    URLs.push([URL_F1DB, URI_ENGINES, engineId + '.yml'].join('/'))
+                });
+
+                Promise.all(
+                    URLs.map(url => fetch(url).then(response => response.text()))
+                )
+                .then(results => {
+
+                    results.forEach(data => {
+                        data = _parseSimpleYAML(data);
+
+                        if ('name' in data) {
+                            if ('fullName' in data) {
+                                Constructors.set(data.id, data.name);
+                            } else {
+                                Engines.set(data.id, data.name);
+                            }
+                        }
+                    });
+
+                })
+                .catch(error => console.log(error))
+                .finally(() => {
+                    // Заполнение constructorsTable, entrantsTable
+                    Constructors.forEach((name, id) =>
+                        document.querySelectorAll('[data-constructor="' + id + '"]').forEach(node => node.textContent = name)
+                    )
+
+                    Engines.forEach((name, id) =>
+                        document.querySelectorAll('[data-engine="' + id + '"]').forEach(node => node.textContent = name)
+                    )
+
+                    constructorsTable.hidden = (null != currentRace);
+                });
+
+            })();
+
+        })();
+
+        // Предварительный вывод driversTable
+        (function() {
+            // сортировка по position
+            DriverStandings = DriverStandings.sort((a, b) => a.position - b.position);
+
+            const tbody = driversTable.querySelector('tbody');
+
+            DriverStandings.forEach(standing => {
+                let tr = document.importNode(tmpl.content, true);
+                let td = tr.querySelectorAll('td');
+
+                td[0].textContent = standing.position;
+                td[1].textContent = standing.driverId;
+                td[1].setAttribute('data-driver', standing.driverId);
+                td[2].textContent = standing.points;
+
+                td.forEach(el => el.style.whiteSpace = 'nowrap');
+                tbody.appendChild(tr);
+            });
+
+            // импорт Drivers
+            (function() {
+                const URLs = [];
+
+                Array.from(Drivers.keys()).forEach(driverId => {
+                    URLs.push([URL_F1DB, URI_DRIVERS, driverId + '.yml'].join('/'))
+                });
+
+                Promise.all(
+                    URLs.map(url => fetch(url).then(response => response.text()))
+                )
+                .then(results => {
+
+                    results.forEach(data => {
+                        data = _parseSimpleYAML(data);
+
+                        const tempObject = Object.create(null);
+
+                        if ('id' in data && 'name' in data) {
+                            tempObject.name = data.name;
+                            tempObject.permanentNumber = data?.permanentNumber ? parseInt(data.permanentNumber) : null;
+
+                            Drivers.set(data.id, tempObject);
+                        }
+                    });
+
+                })
+                .catch(error => console.log(error))
+                .finally(() => {
+                    // Заполнение driversTable, entrantsTable
+
+                    entrantsTable.querySelectorAll('[data-driver]').forEach(node => {
+                        let driver = Drivers.get(node.dataset.driver);
+                        let td     = node.parentNode.querySelectorAll('td');
+
+                        // Verstappen case
+                        td[0].textContent = (33 == driver.permanentNumber) ? 1 : driver.permanentNumber;
+                        td[1].textContent = driver.name;
+                    });
+
+                    driversTable.querySelectorAll('[data-driver]').forEach(node => {
+                        node.textContent = Drivers.get(node.dataset.driver).name;
+                    });
+
+                    driversTable.hidden = (null != currentRace);
+                });
+
+            })();
+
         })();
 
     });
@@ -619,31 +677,6 @@ const Races        = new Map(); // этапы
 
 })();
 
-/* Заполнение названий конструкторов, двигателей */
-(function () {
-    setTimeout(() => {
-        Constructors.forEach((name, id) =>
-            document.querySelectorAll('[data-constructor="' + id + '"]').forEach(node => node.textContent = name)
-        )
-
-        Engines.forEach((name, id) =>
-            document.querySelectorAll('[data-engine="' + id + '"]').forEach(node => node.textContent = name)
-        )
-
-        entrantsTable.querySelectorAll('[data-driver]').forEach(node => {
-            let driver = Drivers.get(node.dataset.driver);
-            let td     = node.parentNode.querySelectorAll('td');
-
-            td[0].textContent = (33 == driver.permanentNumber) ? 1 : driver.permanentNumber;
-            td[1].textContent = driver.name;
-        });
-
-        driversTable.querySelectorAll('[data-driver]').forEach(node => {
-            node.textContent = Drivers.get(node.dataset.driver).name;
-        });
-    }, 3000);
-})();
-
 /* back to main page */
 (function () {
     let a = raceTable.querySelector('a');
@@ -750,7 +783,7 @@ const loadGrandPrix = () => {
                 let Results = [];
                 let result  = new Result();
 
-                for (i = 0; i < data.length; i ++) {
+                for (let i = 0; i < data.length; i ++) {
                     let [key, value] = _line2KeyValue(data[i]);
 
                     switch (key) {
