@@ -77,21 +77,19 @@ const _line2KeyValue = line => {
 
         return [key, value];
     } else {
-        return ['', ''];
+        return [null, null];
     }
 }
 
 const _parseSimpleYAML = data => {
     let tempObject = Object.create(null);
 
-    data = data.split(REGEXP_SPLIT);
+    data = data.split(REGEXP_SPLIT).filter(line => line.length > 0);
 
     data.forEach(line => {
-        if (line.length > 0) {
-            let [key, value] = _line2KeyValue(line);
-            if (key.length) {
-                tempObject[key] = value.length ? value : null;
-            }
+        let [key, value] = _line2KeyValue(line);
+        if (key) {
+            tempObject[key] = value;
         }
     });
 
@@ -100,7 +98,7 @@ const _parseSimpleYAML = data => {
 
 let currentRace = null;
 
-const loadingCircle      = document.querySelector('.loading');
+const loadingCircle = document.querySelector('.loading');
 
 const constructorsTable  = document.querySelector('#constructors');     // чемпионат конструкторов
 const driversTable       = document.querySelector('#drivers');          // чемпионат пилотов
@@ -109,18 +107,12 @@ const racesTable         = document.querySelector('#races');            // ка�
 
 const raceTable          = document.querySelector('#race');             // информация об этапе
 const raceQualifyTable   = document.querySelector('#race-qualifying');  // результаты квалификации к гонке
-const raceGridTable      = document.querySelector('#race-grid');        // стартовая решётка гонки
 const raceResultsTable   = document.querySelector('#race-results');     // результаты гонки
 const sprintQualifyTable = document.querySelector('#sprint-qualifying');// результаты квалификации к спринту
-const sprintGridTable    = document.querySelector('#sprint-grid');      // стартовая решётка спринта
 const sprintResultsTable = document.querySelector('#sprint-results');   // результаты спринта
 
-const mainTables         = [constructorsTable, driversTable, entrantsTable, racesTable];
-const raceTables         = [
-                                raceTable,
-                                sprintQualifyTable, sprintGridTable, sprintResultsTable,
-                                raceQualifyTable, raceGridTable, raceResultsTable
-                           ];
+const mainTables = [constructorsTable, driversTable, entrantsTable, racesTable];
+const raceTables = [raceTable, sprintQualifyTable, sprintResultsTable, raceQualifyTable, raceResultsTable];
 
 /* Этап */
 class Race {
@@ -201,7 +193,7 @@ const Races        = new Map(); // этапы
         a.href        = _race2URI(round, grandPrixId);
         a.textContent = grandPrixId;
         a.addEventListener('click', e => {
-            event.preventDefault();
+            e.preventDefault();
 
             currentRace = e.target.closest('tr').dataset.id;
             loadGrandPrix();
@@ -664,7 +656,10 @@ const Races        = new Map(); // этапы
             let tr = racesTable.querySelector('[data-id="' + race.grandPrixId + '"]');
             let td = tr.querySelectorAll('td');
 
-            td[0].innerHTML   = race.sprint ? ('<span class="badge" data-badge="s">' + race.round + '</span>') : race.round;
+            if (race.sprint) {
+                td[0].innerHTML = '<span class="badge" data-badge="s">' + race.round + '</span>';
+                SPRINTS.push(race.grandPrixId);
+            }
             td[1].textContent = new Intl.DateTimeFormat('en-US', dateOptions).format(dtime);
             td[2].textContent = new Intl.DateTimeFormat('en-US', timeOptions).format(dtime);
             td[3].querySelector('a').textContent = race.grandPrix()?.name || race.grandPrixId;
@@ -679,7 +674,7 @@ const Races        = new Map(); // этапы
 (function () {
     let a = raceTable.querySelector('a');
     a.addEventListener('click', e => {
-        event.preventDefault();
+        e.preventDefault();
 
         currentRace = null;
         history.pushState(currentRace, '', document.location.pathname.split('/').slice(0, -1).join('/') + '/');
