@@ -42,6 +42,36 @@
             <td class="text-bold"></td>
         </tr>
     </template>
+    <template id="qualifying-result-template">
+        <tr>
+            <td class="text-bold"></td>
+            <td></td>
+            <td>
+                <span></span>
+                <br>
+                <small class="text-muted"></small>
+            </td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+        </tr>
+    </template>
+    <template id="race-result-template">
+        <tr>
+            <td class="text-bold"></td>
+            <td></td>
+            <td>
+                <span></span>
+                <br>
+                <small class="text-muted"></small>
+            </td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+        </tr>
+    </template>
 </head>
 <body>
 <div class="container grid-sm" style="max-width: 72rem">
@@ -86,9 +116,9 @@
                 <th class="text-right">pos</th>
                 <th class="text-right">no</th>
                 <th>driver / constructor</th>
-                <th>q1</th>
-                <th>q2</th>
-                <th>q3</th>
+                <th class="text-right">q1</th>
+                <th class="text-right">q2</th>
+                <th class="text-right">q3</th>
                 <th class="text-right">gap</th>
             </tr>
         </thead>
@@ -130,9 +160,9 @@
                 <th class="text-right">pos</th>
                 <th class="text-right">no</th>
                 <th>driver / constructor</th>
-                <th>q1</th>
-                <th>q2</th>
-                <th>q3</th>
+                <th class="text-right">q1</th>
+                <th class="text-right">q2</th>
+                <th class="text-right">q3</th>
                 <th class="text-right">gap</th>
             </tr>
         </thead>
@@ -159,6 +189,13 @@
             </tr>
         </thead>
         <tbody></tbody>
+        <tfoot>
+            <tr>
+                <td colspan="2" class="text-bold text-right">Fastest Lap</td>
+                <td rel="flap"></td>
+                <td rel="flap" colspan="4"></td>
+            </tr>
+        </tfoot>
     </table>
 
     <!-- Races -->

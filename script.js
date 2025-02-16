@@ -62,9 +62,6 @@ const RACES  = [
     'abu-dhabi',
 ];
 
-/* этапы со спринтами */
-const SPRINTS = [];
-
 const _dateTime2UTC  = (date, time) => Date.length ? Date.parse(date + (time.length ? (' ' + time) : '')) : NaN;
 const _race2URI      = (round, grandPrixId) => [round.toString().padStart(2, '0'), grandPrixId].join('-');
 
@@ -344,7 +341,7 @@ const Races        = new Map(); // этапы
             }
         })
     })
-    .catch(error => console.log(error))
+    .catch(error => console.error(error))
     .finally(() => {
         const tmpl = document.querySelector('#standings-template');
 
@@ -458,7 +455,7 @@ const Races        = new Map(); // этапы
                     });
 
                 })
-                .catch(error => console.log(error))
+                .catch(error => console.error(error))
                 .finally(() => {
                     // Заполнение constructorsTable, entrantsTable
                     Constructors.forEach((name, id) =>
@@ -523,7 +520,7 @@ const Races        = new Map(); // этапы
                     });
 
                 })
-                .catch(error => console.log(error))
+                .catch(error => console.error(error))
                 .finally(() => {
                     // Заполнение driversTable, entrantsTable
 
@@ -611,7 +608,7 @@ const Races        = new Map(); // этапы
         });
 
     })
-    .catch(error => console.log(error))
+    .catch(error => console.error(error))
     .finally(() => {
 
         // Импорт Circuits на основе Races
@@ -640,7 +637,7 @@ const Races        = new Map(); // этапы
                     raceTable.querySelector('span').textContent = race.circuit();
                 }
             })
-            .catch(error => console.log(error))
+            .catch(error => console.error(error))
             .finally(() => loadingCircle.hidden = true);
 
         })();
@@ -658,7 +655,6 @@ const Races        = new Map(); // этапы
 
             if (race.sprint) {
                 td[0].innerHTML = '<span class="badge" data-badge="s">' + race.round + '</span>';
-                SPRINTS.push(race.grandPrixId);
             }
             td[1].textContent = new Intl.DateTimeFormat('en-US', dateOptions).format(dtime);
             td[2].textContent = new Intl.DateTimeFormat('en-US', timeOptions).format(dtime);
@@ -720,40 +716,6 @@ const loadGrandPrix = () => {
 
         const raceURL = [URL_F1DB, URI_SEASONS, CURRENT_SEASON, URI_SEASON_RACES, _race2URI(race.round, race.grandPrixId)];
 
-        class Result {
-            position;
-            driverNumber;
-            driverId;
-            constructorId;
-            engineId; // engineManufacturerId
-            q1;
-            q2;
-            q3;
-            laps;
-            time;
-            gap;
-            points;
-            start; // start position
-
-            constructor() {
-                Object.keys(this).forEach(key => this[key] = null);
-            }
-
-            constructorEngine() {
-                let value = [];
-                value.push(Constructors.has(this.constructorId) ? Constructors.get(this.constructorId) : this.constructorId);
-                if (this.constructorId != this.engineId) {
-                    value.push(Engines.has(this.engineId) ? Engines.get(this.engineId) : this.engineId);
-                }
-                return value.join(' ');
-            }
-
-            // присвоение значений
-            update(data) {
-                Object.keys(this).forEach(key => this[key] = (key in data) ? data[key] : null);
-            }
-        }
-
         // Qualifyng Results
         (function () {
             let dateTimeCell = raceQualifyTable.querySelectorAll('thead tr th')[1];
@@ -766,31 +728,118 @@ const loadGrandPrix = () => {
             }
 
             let currURL = [...raceURL, YAML_RACE_QUALIFYING].join('/');
+            let Results;
 
-            fetch(currURL).then(function(response) {
-                if (response.ok) {
-                    return Promise.resolve(response);
-                } else {
-                    console.log(response.status, response.statusText);
-                    return Promise.reject(new Error(response.status));
-                }
-            }).then(response => response.text())
+            fetch(currURL).then(response => response.text())
             .then(data => {
-                data = data.split(REGEXP_SPLIT);
-                console.log(data);
-
-                let Results = [];
-                let result  = new Result();
-
-                for (let i = 0; i < data.length; i ++) {
-                    let [key, value] = _line2KeyValue(data[i]);
-
-                    switch (key) {
-                    }
-                }
-
+                Results = _Results(data.split(REGEXP_SPLIT));
             }).finally(() => {
+                const tbody = raceQualifyTable.querySelector('tbody');
+                const tmpl  = document.querySelector('#qualifying-result-template');
+
+                Results.forEach(result => {
+                    let tr = document.importNode(tmpl.content, true);
+                    let td = tr.querySelectorAll('td');
+
+                    td[0].textContent = result.position;
+                    td[1].textContent = result.driverNumber;
+                    td[2].querySelector('span').textContent = result.driver();
+                    td[2].querySelector('small').textContent = result.constructorEngine();
+                    td[3].textContent = result.q1;
+                    td[4].textContent = result.q2;
+                    td[5].textContent = result.q3;
+                    td[6].textContent = result.gap;
+
+                    td.forEach(el => {
+                        el.classList.add('text-right');
+                        el.style.whiteSpace = 'nowrap'
+                    });
+                    td[2].classList.remove('text-right');
+                    tbody.appendChild(tr);
+                });
+
                 raceQualifyTable.hidden = false
+            });
+
+        })();
+
+        // Race Results
+        (function () {
+            let dateTimeCell = raceResultsTable.querySelectorAll('thead tr th')[1];
+
+            if (isNaN(race.schedule.race)) {
+                dateTimeCell.textContent = '';
+            } else {
+                let dtime = new Date(race.schedule.race - 60 * 1000 * (new Date).getTimezoneOffset());
+                dateTimeCell.textContent = new Intl.DateTimeFormat('en-US', dateTimeOptions).format(dtime);
+            }
+
+            let currURL = [...raceURL, YAML_RACE_RESULTS].join('/');
+            let Results;
+
+            fetch(currURL).then(response => response.text())
+            .then(data => {
+                Results = _Results(data.split(REGEXP_SPLIT));
+            }).finally(() => {
+                const tbody = raceResultsTable.querySelector('tbody');
+                const tmpl  = document.querySelector('#race-result-template');
+
+                Results.forEach(result => {
+                    let tr = document.importNode(tmpl.content, true);
+                    let td = tr.querySelectorAll('td');
+
+                    td[0].textContent = result.position;
+                    td[1].textContent = result.driverNumber;
+                    td[2].querySelector('span').textContent = result.driver();
+                    td[2].querySelector('small').textContent = result.constructorEngine();
+                    td[3].textContent = result.laps;
+                    if (1 == result.position) {
+                        td[4].textContent = result.time;
+                    } else if ('DNF' == result.position || result.dnf) {
+                        td[4].textContent = result.dnf;
+                    } else {
+                        td[4].textContent = result.gap;
+                    }
+                    td[5].textContent = result.points;
+                    td[6].textContent = result.start;
+
+                    td.forEach(el => {
+                        el.classList.add('text-right');
+                        el.style.whiteSpace = 'nowrap'
+                    });
+                    td[2].classList.remove('text-right');
+                    tbody.appendChild(tr);
+                });
+
+                // Fastest Lap
+                let currURL = [...raceURL, YAML_RACE_FLAPS].join('/');
+
+                fetch(currURL).then(response => response.text())
+                .then(data => {
+                    data = data.split(REGEXP_SPLIT);
+
+                    const tbody = raceResultsTable.querySelector('tbody');
+                    let i = 0;
+                    let result = new Result();
+
+                    do {
+                        let [key, value] = _line2KeyValue(data[i]);
+
+                        if (['driverId', 'time'].includes(key)) {
+                            result[key] = value.replaceAll('"', '');
+                        }
+
+                        i ++;
+                    } while (i < data.length && (null == result.driverId || null == result.time));
+
+                    if (result.driverId && result.time) {
+                        let td = raceResultsTable.querySelectorAll('tfoot tr td[rel]');
+                        td[0].textContent = result.driver();
+                        td[1].textContent = result.time;
+                    }
+                }).finally(() => {
+                    raceResultsTable.hidden = false
+                });
             });
 
         })();
@@ -799,7 +848,13 @@ const loadGrandPrix = () => {
     } else {
         // отображение главной страницы
         currentRace = null;
-        raceTables.forEach(t => t.hidden = true);
+
+        raceTables.forEach(t => {
+            t.querySelector('tbody').textContent = '';
+            t.hidden = true;
+        });
+        raceResultsTable.querySelectorAll('tfoot tr td[rel]').forEach(td => td.textContent = '');
+
         mainTables.forEach(t => t.hidden = false);
     }
 }
@@ -808,5 +863,94 @@ currentRace = document.location.pathname.split('/').pop();
 currentRace = RACES.includes(currentRace) ? currentRace : null;
 
 if (currentRace != null) {
-    setTimeout(() => { loadGrandPrix() }, 2000);
+    setTimeout(() => { loadGrandPrix() }, 2500);
+}
+
+class Result {
+    position;
+    driverNumber;
+    driverId;
+    constructorId;
+    engineId; // engineManufacturerId
+    q1;
+    q2;
+    q3;
+    laps;
+    time;
+    gap;
+    dnf; // reasonRetired
+    points;
+    start; // start position
+
+    constructor() {
+        Object.keys(this).forEach(key => this[key] = null);
+    }
+
+    constructorEngine() {
+        let value = [];
+        value.push(Constructors.has(this.constructorId) ? Constructors.get(this.constructorId) : this.constructorId);
+        if (this.constructorId != this.engineId) {
+            value.push(Engines.has(this.engineId) ? Engines.get(this.engineId) : this.engineId);
+        }
+        return value.join(' ');
+    }
+
+    driver() {
+        return Drivers.has(this.driverId) ? Drivers.get(this.driverId).name : this.driverId;
+    }
+}
+
+function _Results(data = []) {
+    let Results = [];
+
+    let result  = new Result();
+
+    for (let i = 0; i < data.length; i ++) {
+        let [key, value] = _line2KeyValue(data[i]);
+
+        switch (key) {
+            case 'position': {
+                if (result.position) {
+                    Results.push(result);
+                    result = new Result();
+                }
+
+                result.position = isNaN(value) ? value : parseInt(value);
+                break;
+            }
+
+            case 'driverNumber':
+            case 'laps':
+            case 'gridPosition':
+            case 'points': {
+                result[('gridPosition' == key) ? 'start' : key] = (!value.length || isNaN(value)) ? value : parseInt(value);
+                break;
+            }
+
+            case 'engineManufacturerId': {
+                result.engineId = value;
+                break;
+            }
+
+            case 'driverId':
+            case 'constructorId':
+            case 'q1':
+            case 'q2':
+            case 'q3':
+            case 'time':
+            case 'gap':
+            case 'reasonRetired': {
+                result[('reasonRetired' == key) ? 'dnf' : key] = value.replaceAll('"', '');
+                break;
+            }
+        }
+    }
+
+    if (result.position) {
+        Results.push(result);
+    }
+
+    Results = Results.sort((a, b) => a.position - b.position);
+
+    return Results;
 }
