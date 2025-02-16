@@ -32,34 +32,22 @@ const YAMLS_SPRINT_RESULTS = [YAML_SPRINT_QUALIFYING, YAML_SPRINT_RESULTS];
 const REGEXP_SPLIT = /\r?\n/;
 
 /* текущий сезон */
-const CURRENT_SEASON = 2024;
+const CURRENT_SEASON = 2025;
 
-/* этапы */
+/* этапы 2024 */
+/*
 const RACES  = [
-    'bahrain',
-    'saudi-arabia',
-    'australia',
-    'japan',
-    'china',
-    'miami',
-    'emilia-romagna',
-    'monaco',
-    'canada',
-    'spain',
-    'austria',
-    'great-britain',
-    'hungary',
-    'belgium',
-    'netherlands',
-    'italy',
-    'azerbaijan',
-    'singapore',
-    'united-states',
-    'mexico',
-    'sao-paulo',
-    'las-vegas',
-    'qatar',
-    'abu-dhabi',
+    'bahrain',    'saudi-arabia', 'australia',     'japan',         'china',     'miami',     'emilia-romagna', 'monaco',
+    'canada',     'spain',        'austria',       'great-britain', 'hungary',   'belgium',   'netherlands',    'italy',
+    'azerbaijan', 'singapore',    'united-states', 'mexico',        'sao-paulo', 'las-vegas', 'qatar',          'abu-dhabi'
+];
+*/
+
+/* этапы 2025 */
+const RACES  = [
+    'australia',  'china',     'japan',         'bahrain',       'saudi-arabia', 'miami',     'emilia-romagna', 'monaco',
+    'spain',      'canada',    'austria',       'great-britain', 'belgium',      'hungary',   'netherlands',    'italy',
+    'azerbaijan', 'singapore', 'united-states', 'mexico',        'sao-paulo',    'las-vegas', 'qatar',          'abu-dhabi',
 ];
 
 const _dateTime2UTC  = (date, time) => Date.length ? Date.parse(date + (time.length ? (' ' + time) : '')) : NaN;
