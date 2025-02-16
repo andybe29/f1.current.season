@@ -716,6 +716,110 @@ const loadGrandPrix = () => {
 
         const raceURL = [URL_F1DB, URI_SEASONS, CURRENT_SEASON, URI_SEASON_RACES, _race2URI(race.round, race.grandPrixId)];
 
+        if (race.sprint) {
+
+            // Sprint Qualifyng Results
+            (function () {
+                let dateTimeCell = sprintQualifyTable.querySelectorAll('thead tr th')[1];
+
+                if (isNaN(race.schedule.sprintQualifying)) {
+                    dateTimeCell.textContent = '';
+                } else {
+                    let dtime = new Date(race.schedule.sprintQualifying - 60 * 1000 * (new Date).getTimezoneOffset());
+                    dateTimeCell.textContent = new Intl.DateTimeFormat('en-US', dateTimeOptions).format(dtime);
+                }
+
+                let currURL = [...raceURL, YAML_SPRINT_QUALIFYING].join('/');
+                let Results;
+
+                fetch(currURL).then(response => response.text())
+                .then(data => {
+                    Results = _Results(data.split(REGEXP_SPLIT));
+                }).finally(() => {
+                    const tbody = sprintQualifyTable.querySelector('tbody');
+                    const tmpl  = document.querySelector('#qualifying-result-template');
+
+                    Results.forEach(result => {
+                        let tr = document.importNode(tmpl.content, true);
+                        let td = tr.querySelectorAll('td');
+
+                        td[0].textContent = result.position;
+                        td[1].textContent = result.driverNumber;
+                        td[2].querySelector('span').textContent = result.driver();
+                        td[2].querySelector('small').textContent = result.constructorEngine();
+                        td[3].textContent = result.q1;
+                        td[4].textContent = result.q2;
+                        td[5].textContent = result.q3;
+                        td[6].textContent = result.gap;
+
+                        td.forEach(el => {
+                            el.classList.add('text-right');
+                            el.style.whiteSpace = 'nowrap'
+                        });
+                        td[2].classList.remove('text-right');
+                        tbody.appendChild(tr);
+                    });
+
+                    sprintQualifyTable.hidden = false
+                });
+
+            })();
+
+            // Sprint Race Results
+            (function () {
+                let dateTimeCell = sprintResultsTable.querySelectorAll('thead tr th')[1];
+
+                if (isNaN(race.schedule.sprintRace)) {
+                    dateTimeCell.textContent = '';
+                } else {
+                    let dtime = new Date(race.schedule.sprintRace - 60 * 1000 * (new Date).getTimezoneOffset());
+                    dateTimeCell.textContent = new Intl.DateTimeFormat('en-US', dateTimeOptions).format(dtime);
+                }
+
+                let currURL = [...raceURL, YAML_SPRINT_RESULTS].join('/');
+                let Results;
+
+                fetch(currURL).then(response => response.text())
+                .then(data => {
+                    Results = _Results(data.split(REGEXP_SPLIT));
+                }).finally(() => {
+                    const tbody = sprintResultsTable.querySelector('tbody');
+                    const tmpl  = document.querySelector('#race-result-template');
+
+                    Results.forEach(result => {
+                        let tr = document.importNode(tmpl.content, true);
+                        let td = tr.querySelectorAll('td');
+
+                        td[0].textContent = result.position;
+                        td[1].textContent = result.driverNumber;
+                        td[2].querySelector('span').textContent = result.driver();
+                        td[2].querySelector('small').textContent = result.constructorEngine();
+                        td[3].textContent = result.laps;
+                        if (1 == result.position) {
+                            td[4].textContent = result.time;
+                        } else if ('DNF' == result.position || result.dnf) {
+                            td[4].textContent = result.dnf;
+                        } else {
+                            td[4].textContent = result.gap;
+                        }
+                        td[5].textContent = result.points;
+                        td[6].textContent = result.start;
+
+                        td.forEach(el => {
+                            el.classList.add('text-right');
+                            el.style.whiteSpace = 'nowrap'
+                        });
+                        td[2].classList.remove('text-right');
+                        tbody.appendChild(tr);
+                    });
+
+                    sprintResultsTable.hidden = false
+                });
+
+            })();
+
+        }
+
         // Qualifyng Results
         (function () {
             let dateTimeCell = raceQualifyTable.querySelectorAll('thead tr th')[1];
@@ -850,10 +954,14 @@ const loadGrandPrix = () => {
         currentRace = null;
 
         raceTables.forEach(t => {
-            t.querySelector('tbody').textContent = '';
+            if (raceTable == t) {
+                t.querySelectorAll('big, span, tbody td').forEach(el => el.textContent = '');
+            } else {
+                t.querySelector('tbody').textContent = '';
+            }
             t.hidden = true;
         });
-        raceResultsTable.querySelectorAll('tfoot tr td[rel]').forEach(td => td.textContent = '');
+        raceResultsTable.querySelectorAll('tfoot tr td[rel]').forEach(el => el.textContent = '');
 
         mainTables.forEach(t => t.hidden = false);
     }
