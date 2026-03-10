@@ -32,14 +32,20 @@ const YAMLS_SPRINT_RESULTS = [YAML_SPRINT_QUALIFYING, YAML_SPRINT_RESULTS];
 const REGEXP_SPLIT = /\r?\n/;
 
 /* текущий сезон */
-const CURRENT_SEASON = 2025;
+const CURRENT_SEASON = 2026;
 
-/* этапы 2025 */
+/* этапы 2026 */
 const RACES  = [
-    'australia',  'china',     'japan',         'bahrain',       'saudi-arabia', 'miami',     'emilia-romagna', 'monaco',
-    'spain',      'canada',    'austria',       'great-britain', 'belgium',      'hungary',   'netherlands',    'italy',
-    'azerbaijan', 'singapore', 'united-states', 'mexico',        'sao-paulo',    'las-vegas', 'qatar',          'abu-dhabi',
+    'australia',           'china',       'japan',         'bahrain',
+    'saudi-arabia',        'miami',       'canada',        'monaco',
+    'barcelona-catalunya', 'austria',     'great-britain', 'belgium',
+    'hungary',             'netherlands', 'italy',         'spain',
+    'azerbaijan',          'singapore',   'united-states', 'mexico',
+    'sao-paulo',           'las-vegas',   'qatar',         'abu-dhabi',
 ];
+
+/* постоянный номер действующего чемпиона, который в текущем сезоне выступает под номером 1 */
+const CHAMPION_PERMANENT_NUMBER = 4;
 
 const _dateTime2UTC  = (date, time) => Date.length ? Date.parse(date + (time.length ? (' ' + time) : '')) : NaN;
 const _race2URI      = (round, grandPrixId) => [round.toString().padStart(2, '0'), grandPrixId].join('-');
@@ -507,8 +513,8 @@ const Races        = new Map(); // этапы
                         let driver = Drivers.get(node.dataset.driver);
                         let td     = node.parentNode.querySelectorAll('td');
 
-                        // Verstappen case
-                        td[0].textContent = (33 == driver.permanentNumber) ? 1 : driver.permanentNumber;
+                        // кейс действующего чемпиона
+                        td[0].textContent = (CHAMPION_PERMANENT_NUMBER == driver.permanentNumber) ? 1 : driver.permanentNumber;
                         td[1].textContent = driver.name;
                     });
 
