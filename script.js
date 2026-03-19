@@ -36,12 +36,9 @@ const CURRENT_SEASON = 2026;
 
 /* этапы 2026 */
 const RACES  = [
-    'australia',           'china',       'japan',         'bahrain',
-    'saudi-arabia',        'miami',       'canada',        'monaco',
-    'barcelona-catalunya', 'austria',     'great-britain', 'belgium',
-    'hungary',             'netherlands', 'italy',         'spain',
-    'azerbaijan',          'singapore',   'united-states', 'mexico',
-    'sao-paulo',           'las-vegas',   'qatar',         'abu-dhabi',
+    'australia',  'china',         'japan',         'miami',   'canada',      'monaco',    'barcelona-catalunya',
+    'austria',    'great-britain', 'belgium',       'hungary', 'netherlands', 'italy',     'spain',
+    'azerbaijan', 'singapore',     'united-states', 'mexico',  'sao-paulo',   'las-vegas', 'qatar', 'abu-dhabi'
 ];
 
 /* постоянный номер действующего чемпиона, который в текущем сезоне выступает под номером 1 */
