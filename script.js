@@ -1,5 +1,7 @@
 'use strict'
 /* URL / URIs / YAML данных */
+const F1_CURRENT_SEASON = 'F1 Current Season';
+
 // базовый URL
 const URL_F1DB = 'https://raw.githubusercontent.com/f1db/f1db/refs/heads/main/src/data';
 
@@ -930,6 +932,8 @@ const loadGrandPrix = () => {
 
         })();
 
+        document.title = [race.grandPrix().fullName, F1_CURRENT_SEASON].join(' | ');
+
         loadingCircle.hidden = true;
     } else {
         // отображение главной страницы
@@ -946,6 +950,8 @@ const loadGrandPrix = () => {
         raceResultsTable.querySelectorAll('tfoot tr td[rel]').forEach(el => el.textContent = '');
 
         mainTables.forEach(t => t.hidden = false);
+
+        document.title = F1_CURRENT_SEASON;
     }
 }
 
