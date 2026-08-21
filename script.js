@@ -40,7 +40,8 @@ const CURRENT_SEASON = 2026;
 const RACES  = [
     'australia',  'china',         'japan',         'miami',   'canada',      'monaco',    'barcelona-catalunya',
     'austria',    'great-britain', 'belgium',       'hungary', 'netherlands', 'italy',     'spain',
-    'azerbaijan', 'singapore',     'united-states', 'mexico',  'sao-paulo',   'las-vegas', 'qatar', 'abu-dhabi'
+    'azerbaijan', 'bahrain',       'singapore',     'united-states', 'mexico',  'sao-paulo',   'las-vegas', 'qatar',
+    'abu-dhabi'
 ];
 
 /* постоянный номер действующего чемпиона, который в текущем сезоне выступает под номером 1 */
@@ -536,7 +537,7 @@ const Races        = new Map(); // этапы
 /* Импорт Races и GrandsPrix */
 /* Заполнение racesTable */
 /* Импорт Circuits на основе Races */
-(function () {
+(function() {
     const URL  = [URL_F1DB, URI_SEASONS, CURRENT_SEASON, URI_SEASON_RACES];
     const URLs = [];
 
@@ -652,7 +653,7 @@ const Races        = new Map(); // этапы
 })();
 
 /* back to main page */
-(function () {
+(function() {
     let a = raceTable.querySelector('a');
     a.addEventListener('click', e => {
         e.preventDefault();
