@@ -434,8 +434,8 @@ const Races        = new Map(); // этапы
                             if ('fullName' in data) {
                                 Constructors.set(data.id, data.name);
                             } else {
-                                // 'Red Bull Ford' => 'Ford'
-                                Engines.set(data.id, data.name.replace('Red Bull ', ''));
+                                // 'Red Bull Ford' => 'RBPT Ford'
+                                Engines.set(data.id, data.name.replace('Red Bull', 'RBPT'));
                             }
                         }
                     });
