@@ -516,6 +516,12 @@ const Races        = new Map(); // этапы
 
                         // кейс действующего чемпиона
                         td[0].textContent = (CHAMPION_PERMANENT_NUMBER == driver.permanentNumber) ? 1 : driver.permanentNumber;
+                        // кейс Рио Хиракавы и Рафы Камары
+                        if ('ryo-hirakawa' == node.dataset.driver) {
+                            td[0].textContent = '50';
+                        } else if ('rafael-camara' == node.dataset.driver) {
+                            td[0].textContent = '51';
+                        }
                         td[1].textContent = driver.name;
                     });
 
